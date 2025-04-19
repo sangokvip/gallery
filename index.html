@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="M-profile Lab - 专业的M型人格测试平台，提供准确的M型人格分析和评估。" />
+    <meta name="keywords" content="M型人格,S型人格,性格测试,人格分析,心理测试" />
+    <meta name="author" content="M-profile Lab Team" />
+    <meta name="robots" content="index, follow" />
+    <title>M-profile Lab</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        image-rendering: pixelated;
+      }
+
+      :root {
+        --primary: #ffffff;
+        --secondary: #000000;
+        --female: #ff69b4;
+        --male: #4a90e2;
+        --s-type: #ff4b2b;
+        --message: #9c27b0;
+        --background: #f5f5f5;
+        --gallery: #4caf50;
+      }
+
+      @keyframes float {
+        0% { transform: translateY(0); }
+        50% { transform: translateY(-4px); }
+        100% { transform: translateY(0); }
+      }
+
+      body {
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: var(--background);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        padding: 1rem;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 800px;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      .logo {
+        text-align: center;
+        font-size: 2rem;
+        color: var(--secondary);
+        text-transform: uppercase;
+        margin-bottom: 1rem;
+        letter-spacing: 2px;
+        font-family: 'Press Start 2P', cursive;
+      }
+
+      .card {
+        background: #fff;
+        border: 4px solid #000;
+        box-shadow: 8px 8px 0 #000;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        animation: float 3s ease-in-out infinite;
+      }
+
+      .card-title {
+        font-size: 1rem;
+        color: var(--secondary);
+      }
+
+      .button-group {
+        display: flex;
+        gap: 1rem;
+      }
+
+      .button {
+        display: inline-block;
+        padding: 0.8rem 1.2rem;
+        font-size: 0.8rem;
+        text-decoration: none;
+        color: #fff;
+        border: 3px solid #000;
+        transition: all 0.2s;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .button:hover {
+        transform: translate(-4px, -4px);
+        box-shadow: 4px 4px 0 #000;
+      }
+
+      .female-button { background: var(--female); }
+      .male-button { background: var(--male); }
+      .s-button { background: var(--s-type); }
+      .message-button { 
+        background: var(--message); 
+        font-family: 'Press Start 2P', cursive;
+      }
+      .gallery-button { background: var(--gallery); }
+
+      @media (max-width: 640px) {
+        .container {
+          gap: 1rem;
+        }
+
+        .logo {
+          font-size: 1.5rem;
+        }
+
+        .card {
+          flex-direction: column;
+          text-align: center;
+          padding: 1rem;
+        }
+
+        .button-group {
+          flex-direction: column;
+          width: 100%;
+        }
+
+        .button {
+          width: 100%;
+          text-align: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="logo">M-profile Lab</h1>
+      
+      <div class="card">
+        <h2 class="card-title">M型人格测试</h2>
+        <div class="button-group">
+          <a href="female.html" class="button female-button">女生版本</a>
+          <a href="male.html" class="button male-button">男生版本</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">S型人格测试</h2>
+        <a href="s.html" class="button s-button">开始测试</a>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">留言板</h2>
+        <a href="message.html" class="button message-button">Dirty Talk</a>
+      </div>
+      
+      <div class="card">
+        <h2 class="card-title">测评图库</h2>
+        <a href="gallery.html" class="button gallery-button">分享结果</a>
+      </div>
+    </div>
+  </body>
+</html>
