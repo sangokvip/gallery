@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Container, Typography, Paper, Box, TextField, Button, AppBar, Toolbar, IconButton, Snackbar, ThemeProvider, createTheme, Dialog, DialogTitle, DialogContent, DialogActions, Divider, CircularProgress } from '@mui/material'
+import { Container, Typography, Paper, Box, TextField, Button, AppBar, Toolbar, IconButton, Snackbar, ThemeProvider, createTheme, Dialog, DialogTitle, DialogContent, DialogActions, Divider, CircularProgress, Drawer, List, ListItem, ListItemIcon, ListItemText } from '@mui/material'
 import HomeIcon from '@mui/icons-material/Home'
+import MenuIcon from '@mui/icons-material/Menu'
 import SendIcon from '@mui/icons-material/Send'
 import DeleteIcon from '@mui/icons-material/Delete'
 import LoginIcon from '@mui/icons-material/Login'
@@ -14,6 +15,9 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import EditIcon from '@mui/icons-material/Edit'
 import CollectionsIcon from '@mui/icons-material/Collections'
+import FemaleIcon from '@mui/icons-material/Female'
+import MaleIcon from '@mui/icons-material/Male'
+import ScienceIcon from '@mui/icons-material/Science'
 import './styles/pixel-theme.css'
 import { messagesApi } from './utils/supabase'
 import { v4 as uuidv4 } from 'uuid'; // 导入 uuid
@@ -738,6 +742,7 @@ function MessageApp() {
     count: 0
   });
   const [newReactionCount, setNewReactionCount] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // 在组件挂载时设置状态
   useEffect(() => {
@@ -1312,7 +1317,7 @@ function MessageApp() {
                 <Typography variant="h6" className="pixel-title-pink" sx={{ color: '#ff69b4' }}>
                   留言板-XR无下限
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2 }}>
                   {isAdmin && (
                     <Button
                       color="inherit"
@@ -1367,9 +1372,67 @@ function MessageApp() {
                     返回首页
                   </Button>
                 </Box>
+                <IconButton
+                  sx={{ 
+                    display: { xs: 'block', md: 'none' },
+                    color: '#ff69b4',
+                    border: '2px solid #ff69b4',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 105, 180, 0.1)'
+                    }
+                  }}
+                  onClick={() => setMobileMenuOpen(true)}
+                >
+                  <MenuIcon />
+                </IconButton>
               </Toolbar>
             </Container>
           </AppBar>
+
+          <Drawer
+            anchor="right"
+            open={mobileMenuOpen}
+            onClose={() => setMobileMenuOpen(false)}
+            PaperProps={{
+              sx: {
+                backgroundColor: '#fff0f5',
+                width: 250,
+                border: '4px solid #ff69b4',
+                '& .MuiListItem-root': {
+                  borderBottom: '1px solid rgba(255, 105, 180, 0.2)'
+                }
+              }
+            }}
+          >
+            <List>
+              {isAdmin && (
+                <ListItem button onClick={handleLogout}>
+                  <ListItemIcon><LogoutIcon sx={{ color: '#ff69b4' }} /></ListItemIcon>
+                  <ListItemText primary="退出管理" sx={{ color: '#ff69b4' }} />
+                </ListItem>
+              )}
+              <ListItem button component="a" href="./female.html">
+                <ListItemIcon><FemaleIcon sx={{ color: '#ff69b4' }} /></ListItemIcon>
+                <ListItemText primary="女M版" sx={{ color: '#ff69b4' }} />
+              </ListItem>
+              <ListItem button component="a" href="./male.html">
+                <ListItemIcon><MaleIcon sx={{ color: '#ff69b4' }} /></ListItemIcon>
+                <ListItemText primary="男M版" sx={{ color: '#ff69b4' }} />
+              </ListItem>
+              <ListItem button component="a" href="./s.html">
+                <ListItemIcon><ScienceIcon sx={{ color: '#ff69b4' }} /></ListItemIcon>
+                <ListItemText primary="S版" sx={{ color: '#ff69b4' }} />
+              </ListItem>
+              <ListItem button component="a" href="./gallery.html">
+                <ListItemIcon><CollectionsIcon sx={{ color: '#ff69b4' }} /></ListItemIcon>
+                <ListItemText primary="图库" sx={{ color: '#ff69b4' }} />
+              </ListItem>
+              <ListItem button component="a" href="./index.html">
+                <ListItemIcon><HomeIcon sx={{ color: '#ff69b4' }} /></ListItemIcon>
+                <ListItemText primary="返回首页" sx={{ color: '#ff69b4' }} />
+              </ListItem>
+            </List>
+          </Drawer>
 
           <Container 
             maxWidth="lg" 

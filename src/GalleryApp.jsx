@@ -5,7 +5,7 @@ import {
   DialogContent, DialogActions, Divider, CircularProgress, Grid, Card, 
   CardContent, CardMedia, CardActions, Modal, FormControl, InputLabel, 
   MenuItem, Select, LinearProgress, Checkbox, Alert, CssBaseline,
-  useMediaQuery
+  useMediaQuery, Drawer, List, ListItem, ListItemIcon, ListItemText
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -28,6 +28,12 @@ import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import Masonry from '@mui/lab/Masonry';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
+import MenuIcon from '@mui/icons-material/Menu';
+import LogoutIcon from '@mui/icons-material/Logout';
+import FemaleIcon from '@mui/icons-material/Female';
+import MaleIcon from '@mui/icons-material/Male';
+import ScienceIcon from '@mui/icons-material/Science';
+import MessageIcon from '@mui/icons-material/Message';
 import './styles/pixel-theme.css';
 import { v4 as uuidv4 } from 'uuid';
 import { galleryApi } from './utils/supabase';
@@ -241,6 +247,7 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
   const [isEditingVotes, setIsEditingVotes] = useState(false);
   const [editLikes, setEditLikes] = useState(likes);
   const [editDislikes, setEditDislikes] = useState(dislikes);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   // 判断是否是当前用户上传的图片
   const isCurrentUserImage = image.user_id === userId;
@@ -653,6 +660,79 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
           />
         )}
 
+        {/* 移动端删除按钮 - 仅对用户自己的图片显示 */}
+        {isCurrentUserImage && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '8px',
+              right: '8px',
+              display: { xs: 'block', md: 'none' },
+              zIndex: 3
+            }}
+          >
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDeleteConfirm(true);
+              }}
+              sx={{
+                backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                color: '#fff',
+                '&:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                },
+                border: '2px solid rgba(255, 255, 255, 0.8)',
+              }}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        )}
+
+        {/* 删除确认对话框 */}
+        <Dialog
+          open={showDeleteConfirm}
+          onClose={() => setShowDeleteConfirm(false)}
+          PaperProps={{
+            sx: {
+              width: '90%',
+              maxWidth: '400px',
+              p: 2,
+              m: 2
+            }
+          }}
+        >
+          <DialogTitle sx={{ pb: 1 }}>确认删除</DialogTitle>
+          <DialogContent>
+            <Typography variant="body1">
+              确定要删除这张图片吗？此操作无法撤销。
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ pt: 2 }}>
+            <Button 
+              onClick={() => setShowDeleteConfirm(false)}
+              variant="outlined"
+              size="small"
+            >
+              取消
+            </Button>
+            <Button
+              onClick={() => {
+                setShowDeleteConfirm(false);
+                onDelete(image.id);
+              }}
+              variant="contained"
+              color="error"
+              size="small"
+            >
+              删除
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* 桌面端编辑和删除按钮 */}
         <Box
           sx={{
             position: 'absolute',
@@ -661,6 +741,7 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
             display: 'flex',
             gap: 1,
             opacity: 0,
+            display: { xs: 'none', md: 'flex' },
             transition: 'opacity 0.2s',
             '&:hover': {
               opacity: 1
@@ -668,10 +749,10 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
             zIndex: 1
           }}
         >
-          {hasEditPermission && (
+          {(isAdmin || isCurrentUserImage) && (
             <>
-          <IconButton 
-            size="small" 
+              <IconButton 
+                size="small" 
                 onClick={(e) => {
                   e.stopPropagation();
                   onEdit(image);
@@ -683,12 +764,12 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
                 }}
               >
                 <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton 
-            size="small" 
+              </IconButton>
+              <IconButton 
+                size="small" 
                 onClick={(e) => {
                   e.stopPropagation();
-                  onDelete(image.id);
+                  setShowDeleteConfirm(true);
                 }}
                 sx={{ 
                   bgcolor: 'rgba(0, 0, 0, 0.5)',
@@ -697,9 +778,9 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
                 }}
               >
                 <DeleteIcon fontSize="small" />
-          </IconButton>
+              </IconButton>
             </>
-        )}
+          )}
         </Box>
       </Box>
     </Card>
@@ -1440,6 +1521,7 @@ function GalleryApp() {
   const [selectedImages, setSelectedImages] = useState(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // 创建一个观察器引用
   const observer = useRef();
@@ -1860,7 +1942,7 @@ function GalleryApp() {
                 <Typography variant="h6" className="app-title" sx={{ color: '#5c6bc0' }}>
                   Report Gallery
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2 }}>
                   {isAdmin && (
                     <Button
                       color="error"
@@ -1913,9 +1995,67 @@ function GalleryApp() {
                     返回首页
                   </Button>
                 </Box>
+                <IconButton
+                  sx={{ 
+                    display: { xs: 'block', md: 'none' },
+                    color: '#5c6bc0',
+                    border: '2px solid #5c6bc0',
+                    '&:hover': {
+                      backgroundColor: 'rgba(92, 107, 192, 0.1)'
+                    }
+                  }}
+                  onClick={() => setMobileMenuOpen(true)}
+                >
+                  <MenuIcon />
+                </IconButton>
               </Toolbar>
             </Container>
           </AppBar>
+
+          <Drawer
+            anchor="right"
+            open={mobileMenuOpen}
+            onClose={() => setMobileMenuOpen(false)}
+            PaperProps={{
+              sx: {
+                backgroundColor: '#ffffff',
+                width: 250,
+                border: '3px solid #5c6bc0',
+                '& .MuiListItem-root': {
+                  borderBottom: '1px solid rgba(92, 107, 192, 0.2)'
+                }
+              }
+            }}
+          >
+            <List>
+              {isAdmin && (
+                <ListItem button onClick={handleLogout}>
+                  <ListItemIcon><LogoutIcon sx={{ color: '#5c6bc0' }} /></ListItemIcon>
+                  <ListItemText primary="退出管理" sx={{ color: '#5c6bc0' }} />
+                </ListItem>
+              )}
+              <ListItem button component="a" href="./female.html">
+                <ListItemIcon><FemaleIcon sx={{ color: '#5c6bc0' }} /></ListItemIcon>
+                <ListItemText primary="女M版" sx={{ color: '#5c6bc0' }} />
+              </ListItem>
+              <ListItem button component="a" href="./male.html">
+                <ListItemIcon><MaleIcon sx={{ color: '#5c6bc0' }} /></ListItemIcon>
+                <ListItemText primary="男M版" sx={{ color: '#5c6bc0' }} />
+              </ListItem>
+              <ListItem button component="a" href="./s.html">
+                <ListItemIcon><ScienceIcon sx={{ color: '#5c6bc0' }} /></ListItemIcon>
+                <ListItemText primary="S版" sx={{ color: '#5c6bc0' }} />
+              </ListItem>
+              <ListItem button component="a" href="./message.html">
+                <ListItemIcon><MessageIcon sx={{ color: '#5c6bc0' }} /></ListItemIcon>
+                <ListItemText primary="留言板" sx={{ color: '#5c6bc0' }} />
+              </ListItem>
+              <ListItem button component="a" href="./index.html">
+                <ListItemIcon><HomeIcon sx={{ color: '#5c6bc0' }} /></ListItemIcon>
+                <ListItemText primary="返回首页" sx={{ color: '#5c6bc0' }} />
+              </ListItem>
+            </List>
+          </Drawer>
 
           <Container maxWidth="xl" sx={{ px: { xs: 1, sm: 2, md: 3 }, pt: 4 }}>
             <Typography 
