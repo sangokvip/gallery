@@ -13,6 +13,7 @@ import AutorenewIcon from '@mui/icons-material/Autorenew'
 import CloseIcon from '@mui/icons-material/Close'
 import MaleIcon from '@mui/icons-material/Male'
 import MessageIcon from '@mui/icons-material/Message'
+import CollectionsIcon from '@mui/icons-material/Collections'
 import './styles/pixel-theme.css'
 
 const RATING_OPTIONS = ['SSS', 'SS', 'S', 'Q', 'N', 'W']
@@ -464,6 +465,7 @@ function App() {
               <Button color="inherit" startIcon={<HomeIcon />} href="/index.html" className="pixel-button-pink" sx={{ color: '#1E3D59' }}>首页</Button>
               <Button color="inherit" startIcon={<ScienceIcon />} href="/s.html" className="pixel-button-pink" sx={{ color: '#1E3D59' }}>S版</Button>
               <Button color="inherit" startIcon={<MaleIcon />} href="/male.html" className="pixel-button-pink" sx={{ color: '#1E3D59' }}>男生版</Button>
+              <Button color="inherit" startIcon={<CollectionsIcon />} href="/gallery.html" className="pixel-button-pink" sx={{ color: '#1E3D59' }}>图库</Button>
               <Button color="inherit" startIcon={<MessageIcon />} href="/message.html" className="pixel-button-pink" sx={{ color: '#1E3D59' }}>留言板</Button>
             </Box>
 
@@ -498,6 +500,10 @@ function App() {
             <ListItem button component="a" href="/male.html" onClick={() => setMobileMenuOpen(false)}>
               <ListItemIcon><MaleIcon sx={{ color: '#1E3D59' }} /></ListItemIcon>
               <ListItemText primary="男生版" sx={{ color: '#1E3D59' }} />
+            </ListItem>
+            <ListItem button component="a" href="/gallery.html" onClick={() => setMobileMenuOpen(false)}>
+              <ListItemIcon><CollectionsIcon sx={{ color: '#1E3D59' }} /></ListItemIcon>
+              <ListItemText primary="图库" sx={{ color: '#1E3D59' }} />
             </ListItem>
             <ListItem button component="a" href="/message.html" onClick={() => setMobileMenuOpen(false)}>
               <ListItemIcon><MessageIcon sx={{ color: '#1E3D59' }} /></ListItemIcon>

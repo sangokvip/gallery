@@ -15,6 +15,7 @@ import MaleIcon from '@mui/icons-material/Male'
 import FemaleIcon from '@mui/icons-material/Female'
 import Footer from './components/Footer'
 import MessageIcon from '@mui/icons-material/Message'
+import CollectionsIcon from '@mui/icons-material/Collections'
 
 // MENU_ITEMS定义移到函数组件内部
 
@@ -453,8 +454,9 @@ function SApp() {
               justifyContent: 'flex-end'
             }}>              
               <Button color="inherit" startIcon={<HomeIcon />} href="/index.html">首页</Button>
-              <Button color="inherit" startIcon={<MaleIcon />} href="/male.html">男生版</Button>
-              <Button color="inherit" startIcon={<FemaleIcon />} href="/female.html">女生版</Button>
+              <Button color="inherit" startIcon={<MaleIcon />} href="/male.html">男M版</Button>
+              <Button color="inherit" startIcon={<FemaleIcon />} href="/female.html">女M版</Button>
+              <Button color="inherit" startIcon={<CollectionsIcon />} href="/gallery.html">图库</Button>
               <Button color="inherit" startIcon={<MessageIcon />} href="/message.html">留言板</Button>
             </Box>
 
@@ -487,6 +489,10 @@ function SApp() {
             <ListItem button component="a" href="/female.html" onClick={() => setMobileMenuOpen(false)}>
               <ListItemIcon><FemaleIcon /></ListItemIcon>
               <ListItemText primary="女生版" />
+            </ListItem>
+            <ListItem button component="a" href="/gallery.html" onClick={() => setMobileMenuOpen(false)}>
+              <ListItemIcon><CollectionsIcon /></ListItemIcon>
+              <ListItemText primary="图库" />
             </ListItem>
             <ListItem button component="a" href="/message.html" onClick={() => setMobileMenuOpen(false)}>
               <ListItemIcon><MessageIcon /></ListItemIcon>

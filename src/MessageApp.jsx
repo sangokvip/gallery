@@ -13,6 +13,7 @@ import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import EditIcon from '@mui/icons-material/Edit'
+import CollectionsIcon from '@mui/icons-material/Collections'
 import './styles/pixel-theme.css'
 import { messagesApi } from './utils/supabase'
 import { v4 as uuidv4 } from 'uuid'; // 导入 uuid
@@ -1325,8 +1326,41 @@ function MessageApp() {
                   )}
                   <Button
                     color="inherit"
+                    href="./female.html"
+                    className="pixel-button-pink"
+                    sx={{ color: '#ff69b4' }}
+                  >
+                    女M版
+                  </Button>
+                  <Button
+                    color="inherit"
+                    href="./male.html"
+                    className="pixel-button-pink"
+                    sx={{ color: '#ff69b4' }}
+                  >
+                    男M版
+                  </Button>
+                  <Button
+                    color="inherit"
+                    href="./s.html"
+                    className="pixel-button-pink"
+                    sx={{ color: '#ff69b4' }}
+                  >
+                    S版
+                  </Button>
+                  <Button
+                    color="inherit"
+                    startIcon={<CollectionsIcon />}
+                    href="./gallery.html"
+                    className="pixel-button-pink"
+                    sx={{ color: '#ff69b4' }}
+                  >
+                    图库
+                  </Button>
+                  <Button
+                    color="inherit"
                     startIcon={<HomeIcon />}
-                    href="/index.html"
+                    href="./index.html"
                     className="pixel-button-pink"
                     sx={{ color: '#ff69b4' }}
                   >

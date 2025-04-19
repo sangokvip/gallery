@@ -14,6 +14,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import FemaleIcon from '@mui/icons-material/Female'
 import Footer from './components/Footer'
 import MessageIcon from '@mui/icons-material/Message'
+import CollectionsIcon from '@mui/icons-material/Collections'
 
 // 使用黑白像素风格的Footer
 
@@ -504,6 +505,7 @@ function App() {
               <Button color="inherit" startIcon={<HomeIcon />} href="/index.html">首页</Button>
               <Button color="inherit" startIcon={<ScienceIcon />} href="/s.html">S版</Button>
               <Button color="inherit" href="/female.html" startIcon={<FemaleIcon />}>女生版</Button>
+              <Button color="inherit" href="/gallery.html" startIcon={<CollectionsIcon />}>图库</Button>
               <Button color="inherit" href="/message.html" startIcon={<MessageIcon />}>留言板</Button>
             </Box>
 
@@ -545,6 +547,10 @@ function App() {
             <ListItem button component="a" href="/female.html" onClick={() => setMobileMenuOpen(false)} sx={{ fontFamily: 'inherit' }}>
               <ListItemIcon><FemaleIcon /></ListItemIcon>
               <ListItemText primary="女生版" primaryTypographyProps={{ fontFamily: 'inherit' }} />
+            </ListItem>
+            <ListItem button component="a" href="/gallery.html" onClick={() => setMobileMenuOpen(false)} sx={{ fontFamily: 'inherit' }}>
+              <ListItemIcon><CollectionsIcon /></ListItemIcon>
+              <ListItemText primary="图库" primaryTypographyProps={{ fontFamily: 'inherit' }} />
             </ListItem>
             <ListItem button component="a" href="/message.html" onClick={() => setMobileMenuOpen(false)} sx={{ fontFamily: 'inherit' }}>
               <ListItemIcon><MessageIcon /></ListItemIcon>

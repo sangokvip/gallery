@@ -31,6 +31,7 @@ import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import './styles/pixel-theme.css';
 import { v4 as uuidv4 } from 'uuid';
 import { galleryApi } from './utils/supabase';
+import CollectionsIcon from '@mui/icons-material/Collections';
 
 // 创建白色像素风格主题
 const theme = createTheme({
@@ -1873,8 +1874,40 @@ function GalleryApp() {
                   <Button
                     color="primary"
                     variant="outlined"
+                    href="./female.html"
+                    size="small"
+                  >
+                    女M版
+                  </Button>
+                  <Button
+                    color="primary"
+                    variant="outlined"
+                    href="./male.html"
+                    size="small"
+                  >
+                    男M版
+                  </Button>
+                  <Button
+                    color="primary"
+                    variant="outlined"
+                    href="./s.html"
+                    size="small"
+                  >
+                    S版
+                  </Button>
+                  <Button
+                    color="primary"
+                    variant="outlined"
+                    href="./message.html"
+                    size="small"
+                  >
+                    留言板
+                  </Button>
+                  <Button
+                    color="primary"
+                    variant="outlined"
                     startIcon={<HomeIcon />}
-                    href="/index.html"
+                    href="./index.html"
                     size="small"
                   >
                     返回首页
