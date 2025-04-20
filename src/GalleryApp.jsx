@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { 
   Container, Typography, Paper, Box, TextField, Button, AppBar, Toolbar, 
   IconButton, Snackbar, ThemeProvider, createTheme, Dialog, DialogTitle, 
@@ -34,6 +34,10 @@ import FemaleIcon from '@mui/icons-material/Female';
 import MaleIcon from '@mui/icons-material/Male';
 import ScienceIcon from '@mui/icons-material/Science';
 import MessageIcon from '@mui/icons-material/Message';
+import PushPinIcon from '@mui/icons-material/PushPin';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import CropFreeIcon from '@mui/icons-material/CropFree';
 import './styles/pixel-theme.css';
 import { v4 as uuidv4 } from 'uuid';
 import { galleryApi } from './utils/supabase';
@@ -213,17 +217,66 @@ const styles = `
     100% { border-color: rgba(255, 64, 129, 0.4); }
   }
 
-  .gradient-border-image-highlight::before {
+  @keyframes titleGlow {
+    0% {
+      text-shadow: 0 0 5px rgba(92, 107, 192, 0.5),
+                   0 0 10px rgba(92, 107, 192, 0.3),
+                   0 0 15px rgba(92, 107, 192, 0.2);
+    }
+    50% {
+      text-shadow: 0 0 10px rgba(92, 107, 192, 0.8),
+                   0 0 20px rgba(92, 107, 192, 0.5),
+                   0 0 30px rgba(92, 107, 192, 0.3);
+    }
+    100% {
+      text-shadow: 0 0 5px rgba(92, 107, 192, 0.5),
+                   0 0 10px rgba(92, 107, 192, 0.3),
+                   0 0 15px rgba(92, 107, 192, 0.2);
+    }
+  }
+
+  @keyframes pixelate {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+  }
+
+  .main-title {
+    position: relative;
+    display: inline-block;
+    padding: 0.5em 1em;
+    background: linear-gradient(45deg, #5c6bc0, #26a69a);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    animation: titleGlow 3s ease-in-out infinite, pixelate 2s ease-in-out infinite;
+    letter-spacing: 2px;
+  }
+
+  .main-title::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border: 2px solid rgba(255, 64, 129, 0.6);
-    animation: highlightBorder 2s infinite;
-    pointer-events: none;
-    z-index: 1;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border: 2px solid #5c6bc0;
+    border-radius: 4px;
+    animation: pixelate 2s ease-in-out infinite;
+    z-index: -1;
+  }
+
+  .main-title::after {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    right: -6px;
+    bottom: -6px;
+    border: 2px solid #26a69a;
+    border-radius: 6px;
+    animation: pixelate 2s ease-in-out infinite reverse;
+    z-index: -2;
   }
 `;
 
@@ -235,20 +288,20 @@ document.head.appendChild(styleSheet);
 
 // 图片卡片组件
 const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSelectionMode, onSelect, userId }) => {
+  const [voteStatus, setVoteStatus] = useState(null);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const [imageError, setImageError] = useState(false);
+  const [showVoteDialog, setShowVoteDialog] = useState(false);
+  const [newLikesCount, setNewLikesCount] = useState(image.likes_count || 0);
+  const [newDislikesCount, setNewDislikesCount] = useState(image.dislikes_count || 0);
   const [isLongImage, setIsLongImage] = useState(false);
-  const [likes, setLikes] = useState(image.likes_count || 0);
-  const [dislikes, setDislikes] = useState(image.dislikes_count || 0);
-  const [hasLiked, setHasLiked] = useState(false);
-  const [hasDisliked, setHasDisliked] = useState(false);
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const [isUpdating, setIsUpdating] = useState(false);
   const [isEditingVotes, setIsEditingVotes] = useState(false);
-  const [editLikes, setEditLikes] = useState(likes);
-  const [editDislikes, setEditDislikes] = useState(dislikes);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  
+
+  const imageUrl = image.image_url || (image.image_path ? galleryApi.storage.from('gallery').getPublicUrl(image.image_path).data.publicUrl : '');
+
   // 判断是否是当前用户上传的图片
   const isCurrentUserImage = image.user_id === userId;
 
@@ -258,8 +311,7 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
       try {
         const voteStatus = await galleryApi.getImageVoteStatus(image.id, userId);
         if (voteStatus !== null) {
-          setHasLiked(voteStatus);
-          setHasDisliked(!voteStatus);
+          setVoteStatus(voteStatus);
         }
       } catch (error) {
         console.error('获取投票状态失败:', error);
@@ -280,16 +332,12 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
       const result = await galleryApi.updateImageLikes(image.id, userId, true);
       
       if (result.action === 'added') {
-        setLikes(prev => prev + 1);
-        setHasLiked(true);
+        setNewLikesCount(prev => prev + 1);
       } else if (result.action === 'removed') {
-        setLikes(prev => prev - 1);
-        setHasLiked(false);
+        setNewLikesCount(prev => prev - 1);
       } else if (result.action === 'changed') {
-        setLikes(prev => prev + 1);
-        setDislikes(prev => prev - 1);
-        setHasLiked(true);
-        setHasDisliked(false);
+        setNewLikesCount(prev => prev + 1);
+        setNewDislikesCount(prev => prev - 1);
       }
     } catch (error) {
       console.error('点赞失败:', error);
@@ -307,16 +355,12 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
       const result = await galleryApi.updateImageLikes(image.id, userId, false);
       
       if (result.action === 'added') {
-        setDislikes(prev => prev + 1);
-        setHasDisliked(true);
+        setNewDislikesCount(prev => prev + 1);
       } else if (result.action === 'removed') {
-        setDislikes(prev => prev - 1);
-        setHasDisliked(false);
+        setNewDislikesCount(prev => prev - 1);
       } else if (result.action === 'changed') {
-        setDislikes(prev => prev + 1);
-        setLikes(prev => prev - 1);
-        setHasDisliked(true);
-        setHasLiked(false);
+        setNewDislikesCount(prev => prev + 1);
+        setNewLikesCount(prev => prev - 1);
       }
     } catch (error) {
       console.error('点踩失败:', error);
@@ -329,9 +373,9 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
   const handleAdminUpdateVotes = async () => {
     try {
       setIsUpdating(true);
-      await galleryApi.adminUpdateVotes(image.id, editLikes, editDislikes);
-      setLikes(editLikes);
-      setDislikes(editDislikes);
+      await galleryApi.adminUpdateVotes(image.id, newLikesCount, newDislikesCount);
+      setNewLikesCount(newLikesCount);
+      setNewDislikesCount(newDislikesCount);
       setIsEditingVotes(false);
       setSnackbarMessage('点赞数量已更新');
       setSnackbarSeverity('success');
@@ -347,68 +391,96 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
   };
 
   // 判断当前用户是否有编辑权限
-  const hasEditPermission = isAdmin || image.user_id === image.current_user_id;
+  const hasEditPermission = isAdmin || image.user_id === userId;
 
   const handleImageLoad = (e) => {
+    const img = e.target;
+    const { naturalWidth, naturalHeight } = img;
+    setImageDimensions({ width: naturalWidth, height: naturalHeight });
+    setIsLongImage(naturalHeight > naturalWidth * 1.5);
     setImageLoaded(true);
-    const width = e.target.naturalWidth;
-    const height = e.target.naturalHeight;
-    setImageDimensions({
-      width,
-      height
-    });
-    setIsLongImage(height / width > 2);
+    setImageError(false);
+  };
+
+  // 置顶功能
+  const handlePinImage = async (e) => {
+    e.stopPropagation();
+    try {
+      await galleryApi.pinImage(image.id);
+      window.location.reload(); // 刷新页面以显示最新排序
+    } catch (error) {
+      console.error('置顶失败:', error);
+    }
   };
 
   return (
-    <Card
-      sx={{
-        height: '100%',
-        display: 'flex',
+    <Card 
+      sx={{ 
+        display: 'flex', 
         flexDirection: 'column',
-        position: 'relative',
-        marginTop: '1rem', // 为标签预留空间
-        '& .MuiTypography-root': {
-          fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-        },
-        // 当前用户上传的图片特殊样式
-        ...(image.user_id === userId && {
-          border: '3px solid #ff80ab',
-          backgroundColor: 'rgba(255, 128, 171, 0.05)',
-          '&::before': {
-            content: '"我的上传"',
-            position: 'absolute',
-            top: '-24px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            backgroundColor: '#ff80ab',
-            color: '#ffffff',
-            padding: '4px 12px',
-            borderRadius: '4px',
-            fontSize: '0.75rem',
-            zIndex: 100,
-            fontFamily: 'inherit',
-            whiteSpace: 'nowrap',
-            boxShadow: '2px 2px 0 rgba(255, 128, 171, 0.3)',
-          },
-          '&:hover': {
-            transform: 'translate(-2px, -2px)',
-            boxShadow: '6px 6px 0 rgba(255, 128, 171, 0.3)',
-          },
-        }),
+        width: '100%',
+        boxShadow: 'none',
+        borderRadius: 0,
+        overflow: 'hidden',
+        outline: isSelected ? '3px solid #2196f3' : 'none',
+        opacity: isSelectionMode && !isSelected ? 0.7 : 1,
+        backgroundColor: 'transparent',
+        border: 'none',
+        transition: 'all 0.3s ease',
+        position: 'relative', // 添加相对定位
       }}
     >
+      {/* 添加用户标识徽章 */}
+      {isCurrentUserImage && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '8px',
+            left: '8px',
+            backgroundColor: 'primary.main',
+            color: 'white',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            fontSize: '0.75rem',
+            fontWeight: 'bold',
+            zIndex: 2,
+            boxShadow: '2px 2px 0 rgba(0,0,0,0.2)',
+            border: '2px solid white',
+            animation: 'pulse 2s infinite',
+            '@keyframes pulse': {
+              '0%': {
+                transform: 'scale(1)',
+                boxShadow: '0 0 0 0 rgba(92, 107, 192, 0.7)',
+              },
+              '70%': {
+                transform: 'scale(1.05)',
+                boxShadow: '0 0 0 10px rgba(92, 107, 192, 0)',
+              },
+              '100%': {
+                transform: 'scale(1)',
+                boxShadow: '0 0 0 0 rgba(92, 107, 192, 0)',
+              },
+            },
+          }}
+        >
+          我的图片
+        </Box>
+      )}
+
       <Box
-        className={isCurrentUserImage ? "gradient-border-image-highlight" : "gradient-border-image"}
         sx={{
           position: 'relative',
           width: '100%',
-          paddingTop: isLongImage ? '150%' : `${(imageDimensions.height / imageDimensions.width * 100) || 75}%`,
-          backgroundColor: 'background.default',
+          paddingTop: isLongImage ? '150%' : '100%',
+          backgroundColor: 'rgba(0, 0, 0, 0.1)',
+          borderRadius: 1,
           overflow: 'hidden',
-          cursor: isEditingVotes ? 'default' : 'pointer'
+          cursor: 'pointer',
+          // 为当前用户的图片添加特殊边框效果
+          border: isCurrentUserImage ? '3px solid #5c6bc0' : 'none',
+          boxShadow: isCurrentUserImage ? '0 0 15px rgba(92, 107, 192, 0.3)' : 'none',
         }}
-        onClick={() => !isEditingVotes && onView(image)}
+        onClick={() => !isSelectionMode && onView(image)}
       >
         {!imageLoaded && !imageError && (
           <CircularProgress 
@@ -434,7 +506,7 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
           }}
         >
           <img 
-            src={image.image_url} 
+            src={imageUrl} 
             alt={image.title || '图片'} 
             onLoad={handleImageLoad}
             onError={() => setImageError(true)}
@@ -446,8 +518,8 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
               transition: 'opacity 0.3s ease-in-out'
             }} 
           />
-        </Box>
-
+      </Box>
+      
         {/* 交互图标栏 */}
         <Box
           sx={{
@@ -472,8 +544,8 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
               <TextField
                 size="small"
                 type="number"
-                value={editLikes}
-                onChange={(e) => setEditLikes(Math.max(0, parseInt(e.target.value) || 0))}
+                value={newLikesCount}
+                onChange={(e) => setNewLikesCount(Math.max(0, parseInt(e.target.value) || 0))}
                 sx={{
                   width: '70px',
                   '& .MuiInputBase-input': {
@@ -491,8 +563,8 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
               <TextField
                 size="small"
                 type="number"
-                value={editDislikes}
-                onChange={(e) => setEditDislikes(Math.max(0, parseInt(e.target.value) || 0))}
+                value={newDislikesCount}
+                onChange={(e) => setNewDislikesCount(Math.max(0, parseInt(e.target.value) || 0))}
                 sx={{
                   width: '70px',
                   '& .MuiInputBase-input': {
@@ -521,14 +593,14 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
                 }}
               >
                 <CheckCircleIcon sx={{ fontSize: '1.2rem' }} />
-              </IconButton>
+        </IconButton>
               <IconButton
                 size="small"
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsEditingVotes(false);
-                  setEditLikes(likes);
-                  setEditDislikes(dislikes);
+                  setNewLikesCount(image.likes_count || 0);
+                  setNewDislikesCount(image.dislikes_count || 0);
                 }}
                 sx={{
                   color: 'error.main',
@@ -537,7 +609,7 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
                 }}
               >
                 <CancelIcon sx={{ fontSize: '1.2rem' }} />
-              </IconButton>
+        </IconButton>
             </>
           ) : (
             <>
@@ -547,7 +619,7 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
                   onClick={handleLike}
                   disabled={isUpdating}
                   sx={{
-                    color: hasLiked ? 'primary.main' : 'white',
+                    color: voteStatus === true ? 'primary.main' : 'white',
                     padding: '4px',
                     backgroundColor: 'rgba(0, 0, 0, 0.3)',
                     '&:hover': {
@@ -557,7 +629,7 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
                   }}
                 >
                   <ThumbUpIcon sx={{ fontSize: '1rem' }} />
-                </IconButton>
+        </IconButton>
                 <Typography
                   variant="caption"
                   sx={{
@@ -567,17 +639,17 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
                     fontWeight: 'bold',
                   }}
                 >
-                  {likes}
+                  {newLikesCount}
                 </Typography>
               </Box>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <IconButton
-                  size="small"
+          <IconButton 
+            size="small" 
                   onClick={handleDislike}
                   disabled={isUpdating}
                   sx={{
-                    color: hasDisliked ? 'error.main' : 'white',
+                    color: voteStatus === false ? 'error.main' : 'white',
                     padding: '4px',
                     backgroundColor: 'rgba(0, 0, 0, 0.3)',
                     '&:hover': {
@@ -597,7 +669,7 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
                     fontWeight: 'bold',
                   }}
                 >
-                  {dislikes}
+                  {newDislikesCount}
                 </Typography>
               </Box>
 
@@ -619,8 +691,8 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
                   }}
                 >
                   <EditIcon sx={{ fontSize: '1rem' }} />
-                </IconButton>
-              )}
+          </IconButton>
+        )}
             </>
           )}
         </Box>
@@ -671,8 +743,8 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
               zIndex: 3
             }}
           >
-            <IconButton
-              size="small"
+          <IconButton 
+            size="small" 
               onClick={(e) => {
                 e.stopPropagation();
                 setShowDeleteConfirm(true);
@@ -724,7 +796,7 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
                 onDelete(image.id);
               }}
               variant="contained"
-              color="error"
+            color="error" 
               size="small"
             >
               删除
@@ -740,16 +812,25 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
             right: '11px',
             display: 'flex',
             gap: 1,
-            opacity: 0,
-            display: { xs: 'none', md: 'flex' },
+            opacity: 1, // 修改为始终显示
             transition: 'opacity 0.2s',
-            '&:hover': {
-              opacity: 1
-            },
             zIndex: 1
           }}
         >
-          {(isAdmin || isCurrentUserImage) && (
+          {isAdmin && (
+            <IconButton
+              size="small"
+              onClick={handlePinImage}
+              sx={{ 
+                bgcolor: 'rgba(0, 0, 0, 0.5)',
+                color: image.is_pinned ? 'primary.main' : 'white',
+                '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.7)' }
+              }}
+            >
+              <PushPinIcon fontSize="small" />
+          </IconButton>
+          )}
+          {(hasEditPermission || image.user_id === userId) && (
             <>
               <IconButton 
                 size="small" 
@@ -769,7 +850,7 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
                 size="small" 
                 onClick={(e) => {
                   e.stopPropagation();
-                  setShowDeleteConfirm(true);
+                  onDelete(image.id);
                 }}
                 sx={{ 
                   bgcolor: 'rgba(0, 0, 0, 0.5)',
@@ -788,158 +869,203 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
 };
 
 // 图片详情模态框
-const ImageDetailModal = ({ open, image, onClose }) => {
+const ImageDetailModal = ({ open, image, onClose, images, currentIndex, onPrevious, onNext }) => {
   const [scale, setScale] = useState(1);
-  const [originalDimensions, setOriginalDimensions] = useState({ width: 0, height: 0 });
-  const [isLoading, setIsLoading] = useState(true);
-  const [initialScaleSet, setInitialScaleSet] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [showControls, setShowControls] = useState(true);
+  const [isMobile] = useState(window.innerWidth <= 768);
 
-  useEffect(() => {
-    if (image) {
-      setIsLoading(true);
-      setInitialScaleSet(false);
-    }
-  }, [image]);
+  // 使用 useMemo 计算导航状态
+  const { canShowPrevious, canShowNext } = useMemo(() => ({
+    canShowPrevious: currentIndex > 0,
+    canShowNext: Array.isArray(images) && currentIndex < images.length - 1
+  }), [currentIndex, images]);
 
-  const handleImageLoad = (e) => {
-    setIsLoading(false);
-    const width = e.target.naturalWidth;
-    const height = e.target.naturalHeight;
-    setOriginalDimensions({
-      width,
-      height
-    });
-
-    if (!initialScaleSet) {
-      if (height > 7000) {
-        setScale(5);
-      } else {
-        setScale(1);
-      }
-      setInitialScaleSet(true);
-    }
+  const handleImageLoad = () => {
+    setLoading(false);
   };
 
   const handleZoomIn = () => {
-    setScale(prev => Math.min(prev + 0.25, 8));
+    setScale(prev => Math.min(prev + 0.1, 3));
   };
 
   const handleZoomOut = () => {
-    setScale(prev => Math.max(prev - 0.25, 0.1));
+    setScale(prev => Math.max(prev - 0.1, 0.1));
   };
 
   const handleResetZoom = () => {
-    if (originalDimensions.height > 7000) {
-      setScale(5);
-    } else {
-      setScale(1);
-    }
+    setScale(1);
   };
 
-  if (!image) return null;
+  const handleKeyDown = useCallback((event) => {
+    if (event.key === 'ArrowLeft') {
+      onPrevious?.();
+    } else if (event.key === 'ArrowRight') {
+      onNext?.();
+    }
+  }, [onPrevious, onNext]);
+
+  useEffect(() => {
+    if (open) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [open, handleKeyDown]);
+
+  // 重置缩放比例
+  useEffect(() => {
+    if (open) {
+      setScale(1);
+      setLoading(true);
+    }
+  }, [open, image]);
+
+  // 记录状态变化
+  useEffect(() => {
+    console.log('Modal state:', {
+      currentIndex,
+      imagesLength: images?.length,
+      canShowPrevious,
+      canShowNext,
+      imageId: image?.id
+    });
+  }, [currentIndex, images, image, canShowPrevious, canShowNext]);
+
+  // 如果没有图片，不显示模态框
+  if (!open || !image) return null;
+
+  // 获取图片URL
+  const imageUrl = image?.image_url || (image?.image_path ? galleryApi.storage.from('gallery').getPublicUrl(image.image_path).data.publicUrl : null);
+
+  // 如果没有有效的图片URL，不显示模态框
+  if (!imageUrl) return null;
 
   return (
-    <Modal
+    <Dialog
       open={open}
       onClose={onClose}
-      aria-labelledby="image-detail-modal"
+      maxWidth={false}
+      fullWidth
+      sx={{
+        '& .MuiDialog-paper': {
+          backgroundColor: 'black',
+          maxWidth: '100vw',
+          maxHeight: '100vh',
+          m: 0,
+          position: 'relative'
+        }
+      }}
     >
-      <Box sx={{
+      <IconButton
+        onClick={onClose}
+        sx={{
         position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: '90vw',
-        height: '90vh',
-        bgcolor: '#000000',
-        display: 'flex',
-        flexDirection: 'column',
-        outline: 'none',
-      }}>
-        {/* 顶部工具栏 */}
-        <Box sx={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
+          right: 8,
+          top: 8,
+          color: 'white',
           zIndex: 2,
-          display: 'flex',
-          gap: 1,
-          p: 1,
-          background: 'linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%)',
-          width: '100%',
-          justifyContent: 'flex-end',
-          opacity: 0.8,
-          transition: 'opacity 0.3s',
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
           '&:hover': {
-            opacity: 1
+            backgroundColor: 'rgba(0, 0, 0, 0.7)'
           }
-        }}>
-          <IconButton
-            onClick={handleZoomOut}
-            disabled={scale <= 0.1}
-            title="缩小"
-            sx={{ color: 'white' }}
-          >
-            <RemoveIcon />
-          </IconButton>
-          <Typography sx={{
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            px: 1,
-            fontSize: '0.875rem',
-            fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-          }}>
-            {Math.round(scale * 100)}%
-          </Typography>
-          <IconButton
-            onClick={handleZoomIn}
-            disabled={scale >= 8}
-            title="放大"
-            sx={{ color: 'white' }}
-          >
-            <AddIcon />
-          </IconButton>
-          <IconButton
-            onClick={handleResetZoom}
-            title="重置缩放"
-            sx={{ color: 'white' }}
-          >
-            <RestartAltIcon />
-          </IconButton>
-          <IconButton
-            onClick={onClose}
-            title="关闭"
-            sx={{ color: 'white' }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </Box>
+        }}
+      >
+        <CloseIcon />
+      </IconButton>
 
-        {/* 图片容器 */}
-        <Box sx={{
-          flex: 1,
-          overflow: 'auto',
-          display: 'flex',
-          alignItems: 'center',
+      <Box
+        sx={{
+        display: 'flex',
           justifyContent: 'center',
+          alignItems: 'center',
+          width: '100vw',
+          height: '100vh',
           position: 'relative',
-          '&::-webkit-scrollbar': {
-            width: '8px',
-            height: '8px',
-          },
-          '&::-webkit-scrollbar-track': {
-            background: 'transparent',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            background: 'rgba(255, 255, 255, 0.2)',
-            borderRadius: '4px',
-            '&:hover': {
-              background: 'rgba(255, 255, 255, 0.3)',
-            },
-          },
-        }}>
-          {isLoading && (
+          userSelect: 'none'
+        }}
+        onMouseEnter={() => setShowControls(true)}
+        onMouseLeave={() => setShowControls(false)}
+        onTouchStart={() => setShowControls(true)}
+        onTouchEnd={() => setTimeout(() => setShowControls(false), 3000)}
+      >
+        {/* 导航按钮容器 */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: isMobile ? '0 8px' : '0 16px',
+            opacity: showControls ? 1 : 0,
+            transition: 'opacity 0.3s',
+            zIndex: 1,
+            pointerEvents: 'none'
+          }}
+        >
+          {/* 左箭头 */}
+          <Box sx={{ pointerEvents: 'auto', minWidth: isMobile ? 36 : 48 }}>
+            {canShowPrevious && (
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPrevious?.();
+                }}
+                sx={{
+                  color: 'white',
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)'
+                  },
+                  width: isMobile ? 36 : 48,
+                  height: isMobile ? 36 : 48
+                }}
+              >
+                <ArrowBackIcon sx={{ fontSize: isMobile ? 20 : 24 }} />
+              </IconButton>
+            )}
+          </Box>
+
+          {/* 右箭头 */}
+          <Box sx={{ pointerEvents: 'auto', minWidth: isMobile ? 36 : 48 }}>
+            {canShowNext && (
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNext?.();
+                }}
+                sx={{
+                  color: 'white',
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)'
+                  },
+                  width: isMobile ? 36 : 48,
+                  height: isMobile ? 36 : 48
+                }}
+              >
+                <ArrowForwardIcon sx={{ fontSize: isMobile ? 20 : 24 }} />
+              </IconButton>
+            )}
+          </Box>
+        </Box>
+        
+        {/* 图片容器 */}
+        <Box 
+          sx={{ 
+            position: 'relative',
+            width: '100%', 
+            height: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            overflow: 'auto'
+          }}
+        >
+          {loading && (
             <CircularProgress
               sx={{
                 position: 'absolute',
@@ -952,49 +1078,49 @@ const ImageDetailModal = ({ open, image, onClose }) => {
             />
           )}
           <img
-            src={image.image_url}
+            src={imageUrl}
             alt={image.description || ''}
             onLoad={handleImageLoad}
-            style={{
-              maxWidth: '100%',
+            style={{ 
+              maxWidth: '100%', 
               maxHeight: '100%',
               objectFit: 'contain',
               transform: `scale(${scale})`,
-              transformOrigin: 'center center',
-              transition: 'transform 0.2s ease-out',
-              visibility: isLoading ? 'hidden' : 'visible',
-              imageRendering: 'pixelated'
-            }}
+              transition: 'transform 0.2s',
+              display: loading ? 'none' : 'block'
+            }} 
           />
         </Box>
-
-        {/* 底部描述（如果有） */}
-        {image.description && (
-          <Box sx={{
+        
+        {/* 缩放控制按钮组 */}
+        <Box
+          sx={{
             position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            background: 'linear-gradient(0deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%)',
-            p: 2,
-            opacity: 0.8,
+            bottom: 16,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            gap: 1,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            padding: 1,
+            borderRadius: 1,
+            opacity: showControls ? 1 : 0,
             transition: 'opacity 0.3s',
-            '&:hover': {
-              opacity: 1
-            }
-          }}>
-            <Typography sx={{
-              color: 'white',
-              fontSize: '0.875rem',
-              textAlign: 'center',
-              fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-            }}>
-              {image.description}
-            </Typography>
-          </Box>
-        )}
+            zIndex: 1
+          }}
+        >
+          <IconButton onClick={handleZoomOut} sx={{ color: 'white' }}>
+            <RemoveIcon />
+          </IconButton>
+          <IconButton onClick={handleResetZoom} sx={{ color: 'white' }}>
+            <CropFreeIcon />
+          </IconButton>
+          <IconButton onClick={handleZoomIn} sx={{ color: 'white' }}>
+            <AddIcon />
+          </IconButton>
       </Box>
-    </Modal>
+      </Box>
+    </Dialog>
   );
 };
 
@@ -1516,12 +1642,17 @@ function GalleryApp() {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('info');
   const [userId, setUserId] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => {
+    // 从 localStorage 读取管理员状态
+    return localStorage.getItem('isAdmin') === 'true';
+  });
   const [filter, setFilter] = useState('all');
   const [selectedImages, setSelectedImages] = useState(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(-1);
+  const [viewingImage, setViewingImage] = useState(null);
 
   // 创建一个观察器引用
   const observer = useRef();
@@ -1662,6 +1793,7 @@ function GalleryApp() {
     const password = prompt('请输入管理员密码：');
     if (password === 'Sangok#3') {
       setIsAdmin(true);
+      localStorage.setItem('isAdmin', 'true'); // 保存管理员状态
       setSnackbarMessage('管理员登录成功！');
       setSnackbarOpen(true);
     } else if (password !== null) {
@@ -1673,6 +1805,7 @@ function GalleryApp() {
   // 退出管理员模式
   const handleLogout = () => {
     setIsAdmin(false);
+    localStorage.removeItem('isAdmin'); // 移除管理员状态
     setSnackbarMessage('已退出管理员模式！');
     setSnackbarOpen(true);
   };
@@ -1796,8 +1929,20 @@ function GalleryApp() {
 
   // 查看图片详情
   const handleViewImage = (image) => {
-    setSelectedImage(image);
-    setImageDetailOpen(true);
+    if (!image?.id || !images?.length) return;
+    
+    const index = images.findIndex(img => img.id === image.id);
+    console.log('Opening image:', {
+      imageId: image.id,
+      index,
+      totalImages: images.length,
+      imagesArray: images.map(img => img.id)
+    });
+    
+    if (index !== -1) {
+      setCurrentImageIndex(index);
+      setViewingImage(image);
+    }
   };
 
   // 编辑图片信息
@@ -1916,6 +2061,44 @@ function GalleryApp() {
       }
     }
   }, [images, userId, isAdmin]);
+
+  // 处理上一张图片
+  const handlePreviousImage = useCallback(() => {
+    if (!images?.length) return;
+    
+    if (currentImageIndex > 0) {
+      const newIndex = currentImageIndex - 1;
+      console.log('Moving to previous image:', {
+        newIndex,
+        currentIndex: currentImageIndex,
+        totalImages: images.length
+      });
+      setCurrentImageIndex(newIndex);
+      setViewingImage(images[newIndex]);
+    }
+  }, [currentImageIndex, images]);
+
+  // 处理下一张图片
+  const handleNextImage = useCallback(() => {
+    if (!images?.length) return;
+    
+    if (currentImageIndex < images.length - 1) {
+      const newIndex = currentImageIndex + 1;
+      console.log('Moving to next image:', {
+        newIndex,
+        currentIndex: currentImageIndex,
+        totalImages: images.length
+      });
+      setCurrentImageIndex(newIndex);
+      setViewingImage(images[newIndex]);
+    }
+  }, [currentImageIndex, images]);
+
+  // 关闭图片预览
+  const handleCloseImagePreview = useCallback(() => {
+    setViewingImage(null);
+    setCurrentImageIndex(-1);
+  }, []);
 
   return (
     <ErrorBoundary>
@@ -2058,20 +2241,87 @@ function GalleryApp() {
           </Drawer>
 
           <Container maxWidth="xl" sx={{ px: { xs: 1, sm: 2, md: 3 }, pt: 4 }}>
-            <Typography 
-              variant="h3" 
-              component="h1"
-              sx={{ 
+            <Box
+              sx={{
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
                 mb: 6,
-                fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
-                fontFamily: '"Press Start 2P", cursive',
-                color: '#5c6bc0',
-                textAlign: 'center',
+                px: { xs: 2, sm: 3, md: 4 },
               }}
-              onDoubleClick={handleTitleDoubleClick}
             >
-              Report Gallery
-            </Typography>
+              <Box
+                sx={{
+                  width: 'auto',
+                  minWidth: { xs: '280px', sm: '400px', md: '500px' },
+                  position: 'relative',
+                  padding: { xs: '1rem', sm: '1.5rem', md: '2rem' },
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  borderRadius: '8px',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    border: '2px solid #5c6bc0',
+                    borderRadius: '8px',
+                    transform: 'translate(-8px, -8px)',
+                    zIndex: -1,
+                  },
+                  '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    border: '2px solid #26a69a',
+                    borderRadius: '8px',
+                    transform: 'translate(8px, 8px)',
+                    zIndex: -1,
+                  },
+                }}
+              >
+                <Typography 
+                  variant="h3" 
+                  component="h1"
+                  className="main-title"
+                  sx={{ 
+                    fontSize: { 
+                      xs: '1.5rem', 
+                      sm: '2rem', 
+                      md: '2.5rem' 
+                    },
+                    fontFamily: '"Press Start 2P", cursive',
+                    textAlign: 'center',
+                    width: 'auto',
+                    display: 'inline-block',
+                    position: 'relative',
+                    padding: { xs: '0.5rem', sm: '0.75rem', md: '1rem' },
+                    background: 'linear-gradient(45deg, #5c6bc0, #26a69a)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    color: 'transparent',
+                    textShadow: '2px 2px 4px rgba(0,0,0,0.1)',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'linear-gradient(45deg, #5c6bc0, #26a69a)',
+                      opacity: 0.1,
+                      borderRadius: '4px',
+                      zIndex: -1,
+                    }
+                  }}
+                  onDoubleClick={handleTitleDoubleClick}
+                >
+                  Report Gallery
+                </Typography>
+              </Box>
+            </Box>
 
             <Box sx={{ 
               mb: 4, 
@@ -2230,9 +2480,13 @@ function GalleryApp() {
             />
 
             <ImageDetailModal
-              open={imageDetailOpen}
-              image={selectedImage}
-              onClose={() => setImageDetailOpen(false)}
+              open={!!viewingImage}
+              image={viewingImage}
+              onClose={handleCloseImagePreview}
+              images={images}
+              currentIndex={currentImageIndex}
+              onPrevious={handlePreviousImage}
+              onNext={handleNextImage}
             />
 
             <EditImageDialog

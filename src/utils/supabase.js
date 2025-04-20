@@ -24,7 +24,7 @@ export const galleryApi = {
       const { data, error, count } = await supabase
         .from('report_images')
         .select('*', { count: 'exact' })
-        .order('likes_count', { ascending: false }) // 暂时使用 likes_count 排序
+        .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
@@ -53,14 +53,15 @@ export const galleryApi = {
       console.log('成功获取图片列表:', {
         totalCount: count,
         returnedCount: processedData.length,
-        firstImage: processedData[0],
+        offset,
+        limit,
         hasMore: offset + limit < count
       });
 
       return { 
         data: processedData, 
         count,
-        hasMore: offset + limit < count // 添加hasMore标志
+        hasMore: offset + limit < count
       };
     } catch (error) {
       console.error('获取图片列表时发生错误:', error);
@@ -536,6 +537,31 @@ export const galleryApi = {
     } catch (error) {
       console.error('获取投票状态失败:', error);
       return null;
+    }
+  },
+
+  // 置顶图片
+  async pinImage(imageId) {
+    try {
+      const { data: currentImage, error: getError } = await supabase
+        .from('report_images')
+        .select('is_pinned')
+        .eq('id', imageId)
+        .single();
+
+      if (getError) throw getError;
+
+      const { error: updateError } = await supabase
+        .from('report_images')
+        .update({ is_pinned: !currentImage.is_pinned })
+        .eq('id', imageId);
+
+      if (updateError) throw updateError;
+
+      return { success: true };
+    } catch (error) {
+      console.error('置顶图片失败:', error);
+      throw error;
     }
   },
 }
