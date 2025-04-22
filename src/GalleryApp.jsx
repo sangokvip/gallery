@@ -5,7 +5,8 @@ import {
   DialogContent, DialogActions, Divider, CircularProgress, Grid, Card, 
   CardContent, CardMedia, CardActions, Modal, FormControl, InputLabel, 
   MenuItem, Select, LinearProgress, Checkbox, Alert, CssBaseline,
-  useMediaQuery, Drawer, List, ListItem, ListItemIcon, ListItemText
+  useMediaQuery, Drawer, List, ListItem, ListItemIcon, ListItemText,
+  alpha
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -43,75 +44,121 @@ import { v4 as uuidv4 } from 'uuid';
 import { galleryApi } from './utils/supabase';
 import CollectionsIcon from '@mui/icons-material/Collections';
 
-// 创建白色像素风格主题
+// 创建现代风格主题
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#5c6bc0', // 柔和的靛蓝色
-      light: '#8e99f3',
-      dark: '#26418f',
+      main: '#f97316', // 橙色
+      light: '#fb923c',
+      dark: '#ea580c',
     },
     secondary: {
-      main: '#26a69a', // 清新的青绿色
-      light: '#64d8cb',
-      dark: '#00766c',
+      main: '#f59e0b', // 黄色
+      light: '#fbbf24',
+      dark: '#d97706',
     },
     background: {
-      default: '#ffffff',
+      default: '#fffbf5',
       paper: '#ffffff',
     },
     text: {
-      primary: '#2c3e50', // 深青灰色
-      secondary: '#546e7a',
+      primary: '#111827',
+      secondary: '#4b5563',
     },
     accent: {
-      pink: '#ff80ab', // 柔和的粉色
-      purple: '#b388ff', // 淡紫色
-      green: '#69f0ae', // 薄荷绿
-      yellow: '#ffd54f', // 温暖的黄色
+      pink: '#ec4899',
+      green: '#10b981',
+      yellow: '#f59e0b',
+      red: '#ef4444',
+    },
+    error: {
+      main: '#ef4444',
+      light: '#f87171', 
+      dark: '#dc2626',
+    },
+    warning: {
+      main: '#f59e0b',
+      light: '#fbbf24',
+      dark: '#d97706',
+    },
+    info: {
+      main: '#f97316', // 改为橙色
+      light: '#fb923c',
+      dark: '#ea580c',
+    },
+    success: {
+      main: '#10b981',
+      light: '#34d399',
+      dark: '#059669',
     }
   },
   typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h3: {
+    fontFamily: '"Inter", "SF Pro Display", "Roboto", "Helvetica", "Arial", sans-serif',
+    h1: {
       fontWeight: 700,
-      color: '#5c6bc0',
-      textAlign: 'center',
-      marginBottom: '2rem',
-      fontSize: '1.5rem',
-      '@media (min-width:600px)': {
-        fontSize: '2rem',
-      },
+      letterSpacing: '-0.025em',
+    },
+    h2: {
+      fontWeight: 700,
+      letterSpacing: '-0.025em',
+    },
+    h3: {
+      fontWeight: 600,
+      letterSpacing: '-0.025em',
+    },
+    h4: {
+      fontWeight: 600,
+      letterSpacing: '-0.025em',
+    },
+    h5: {
+      fontWeight: 600,
+      letterSpacing: '-0.025em',
+    },
+    h6: {
+      fontWeight: 600,
+      letterSpacing: '-0.025em',
     },
     button: {
-      fontFamily: 'inherit',
+      fontWeight: 500,
       textTransform: 'none',
-      fontSize: '0.875rem',
     },
     body1: {
-      fontSize: '0.9rem',
-      '@media (min-width:600px)': {
-        fontSize: '1rem',
-      },
+      fontSize: '1rem',
+      lineHeight: 1.5,
     },
     body2: {
-      fontSize: '0.8rem',
-      '@media (min-width:600px)': {
-        fontSize: '0.875rem',
-      },
+      fontSize: '0.875rem',
+      lineHeight: 1.5,
     },
   },
+  shape: {
+    borderRadius: 12,
+  },
+  shadows: [
+    'none',
+    '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+    '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+    '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+  ],
   components: {
     MuiPaper: {
       styleOverrides: {
         root: {
-          borderRadius: '4px',
-          border: '3px solid #5c6bc0',
-          boxShadow: '4px 4px 0 rgba(92, 107, 192, 0.2)',
-          transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+          transition: 'box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out',
           '&:hover': {
-            transform: 'translate(-2px, -2px)',
-            boxShadow: '6px 6px 0 rgba(92, 107, 192, 0.3)',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
           },
         },
       },
@@ -119,32 +166,27 @@ const theme = createTheme({
     MuiButton: {
       styleOverrides: {
         root: {
-          fontFamily: 'inherit',
-          border: '2px solid #5c6bc0',
-          boxShadow: '3px 3px 0 rgba(92, 107, 192, 0.2)',
+          borderRadius: 8,
           padding: '8px 16px',
-          '&:hover': {
-            transform: 'translate(-2px, -2px)',
-            boxShadow: '5px 5px 0 rgba(92, 107, 192, 0.3)',
-          },
-          '&:active': {
-            transform: 'translate(2px, 2px)',
-            boxShadow: '1px 1px 0 rgba(92, 107, 192, 0.2)',
-          },
+          transition: 'all 0.2s ease',
+          fontWeight: 500,
         },
         contained: {
-          backgroundColor: '#5c6bc0',
-          color: '#ffffff',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
           '&:hover': {
-            backgroundColor: '#8e99f3',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            transform: 'translateY(-1px)',
+          },
+          '&:active': {
+            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            transform: 'translateY(1px)',
           },
         },
         outlined: {
-          backgroundColor: 'transparent',
-          borderColor: '#5c6bc0',
-          color: '#5c6bc0',
+          borderWidth: '1.5px',
           '&:hover': {
-            backgroundColor: 'rgba(92, 107, 192, 0.05)',
+            borderWidth: '1.5px',
+            transform: 'translateY(-1px)',
           },
         },
       },
@@ -152,16 +194,12 @@ const theme = createTheme({
     MuiCard: {
       styleOverrides: {
         root: {
-          border: '3px solid #5c6bc0',
-          boxShadow: '4px 4px 0 rgba(92, 107, 192, 0.2)',
+          overflow: 'hidden',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
           transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
           '&:hover': {
-            transform: 'translate(-2px, -2px)',
-            boxShadow: '6px 6px 0 rgba(92, 107, 192, 0.3)',
-          },
-          backgroundColor: '#ffffff',
-          '& .MuiTypography-root': {
-            fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+            transform: 'translateY(-4px)',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
           },
         },
       },
@@ -169,13 +207,11 @@ const theme = createTheme({
     MuiIconButton: {
       styleOverrides: {
         root: {
-          border: '2px solid #5c6bc0',
-          borderRadius: '4px',
-          padding: '8px',
-          color: '#5c6bc0',
+          borderRadius: 8,
+          transition: 'all 0.2s ease',
           '&:hover': {
-            backgroundColor: 'rgba(92, 107, 192, 0.05)',
-            color: '#8e99f3',
+            backgroundColor: alpha('#2563eb', 0.08),
+            transform: 'translateY(-1px)',
           },
         },
       },
@@ -183,8 +219,9 @@ const theme = createTheme({
     MuiDialog: {
       styleOverrides: {
         paper: {
-          border: '3px solid #5c6bc0',
-          boxShadow: '6px 6px 0 rgba(92, 107, 192, 0.2)',
+          borderRadius: 16,
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+          overflow: 'hidden',
         },
       },
     },
@@ -192,16 +229,48 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           '& .MuiOutlinedInput-root': {
-            '& fieldset': {
-              borderColor: '#5c6bc0',
-              borderWidth: '2px',
+            borderRadius: 8,
+            transition: 'all 0.2s ease',
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: '#60a5fa',
             },
-            '&:hover fieldset': {
-              borderColor: '#8e99f3',
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              borderWidth: 2,
             },
-            '&.Mui-focused fieldset': {
-              borderColor: '#5c6bc0',
-            },
+          },
+        },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          fontWeight: 500,
+        },
+      },
+    },
+    MuiAlert: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+        },
+      },
+    },
+    MuiLink: {
+      styleOverrides: {
+        root: {
+          textDecoration: 'none',
+          transition: 'color 0.2s ease',
+          fontWeight: 500,
+          '&:hover': {
+            textDecoration: 'underline',
           },
         },
       },
@@ -211,72 +280,80 @@ const theme = createTheme({
 
 // 添加自定义样式到主题
 const styles = `
-  @keyframes highlightBorder {
-    0% { border-color: rgba(255, 64, 129, 0.4); }
-    50% { border-color: rgba(255, 64, 129, 0.8); }
-    100% { border-color: rgba(255, 64, 129, 0.4); }
-  }
-
   @keyframes titleGlow {
     0% {
-      text-shadow: 0 0 5px rgba(92, 107, 192, 0.5),
-                   0 0 10px rgba(92, 107, 192, 0.3),
-                   0 0 15px rgba(92, 107, 192, 0.2);
+      text-shadow: 0 0 5px rgba(37, 99, 235, 0.5),
+                   0 0 10px rgba(37, 99, 235, 0.3),
+                   0 0 15px rgba(37, 99, 235, 0.2);
     }
     50% {
-      text-shadow: 0 0 10px rgba(92, 107, 192, 0.8),
-                   0 0 20px rgba(92, 107, 192, 0.5),
-                   0 0 30px rgba(92, 107, 192, 0.3);
+      text-shadow: 0 0 10px rgba(37, 99, 235, 0.8),
+                   0 0 20px rgba(37, 99, 235, 0.5),
+                   0 0 30px rgba(37, 99, 235, 0.3);
     }
     100% {
-      text-shadow: 0 0 5px rgba(92, 107, 192, 0.5),
-                   0 0 10px rgba(92, 107, 192, 0.3),
-                   0 0 15px rgba(92, 107, 192, 0.2);
+      text-shadow: 0 0 5px rgba(37, 99, 235, 0.5),
+                   0 0 10px rgba(37, 99, 235, 0.3),
+                   0 0 15px rgba(37, 99, 235, 0.2);
     }
   }
 
-  @keyframes pixelate {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.02); }
-    100% { transform: scale(1); }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 0.9;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
   }
 
   .main-title {
     position: relative;
     display: inline-block;
-    padding: 0.5em 1em;
-    background: linear-gradient(45deg, #5c6bc0, #26a69a);
+    background: linear-gradient(45deg, #2563eb, #8b5cf6);
     background-clip: text;
     -webkit-background-clip: text;
     color: transparent;
-    animation: titleGlow 3s ease-in-out infinite, pixelate 2s ease-in-out infinite;
-    letter-spacing: 2px;
+    animation: titleGlow 3s ease-in-out infinite;
+    letter-spacing: -0.025em;
   }
 
-  .main-title::before {
-    content: '';
-    position: absolute;
-    top: -3px;
-    left: -3px;
-    right: -3px;
-    bottom: -3px;
-    border: 2px solid #5c6bc0;
-    border-radius: 4px;
-    animation: pixelate 2s ease-in-out infinite;
-    z-index: -1;
+  .fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
   }
-
-  .main-title::after {
-    content: '';
-    position: absolute;
-    top: -6px;
-    left: -6px;
-    right: -6px;
-    bottom: -6px;
-    border: 2px solid #26a69a;
-    border-radius: 6px;
-    animation: pixelate 2s ease-in-out infinite reverse;
-    z-index: -2;
+  
+  .image-loading {
+    opacity: 0;
+    transform: scale(0.98);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  
+  .image-loaded {
+    opacity: 1;
+    transform: scale(1);
+  }
+  
+  .hover-scale {
+    transition: transform 0.3s ease;
+  }
+  
+  .hover-scale:hover {
+    transform: scale(1.03);
+  }
+  
+  .pulse-animation {
+    animation: pulse 2s infinite;
   }
 `;
 
@@ -299,6 +376,7 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
   const [isUpdating, setIsUpdating] = useState(false);
   const [isEditingVotes, setIsEditingVotes] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [hovered, setHovered] = useState(false);
 
   const imageUrl = image.image_url || (image.image_path ? galleryApi.storage.from('gallery').getPublicUrl(image.image_path).data.publicUrl : '');
 
@@ -333,11 +411,14 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
       
       if (result.action === 'added') {
         setNewLikesCount(prev => prev + 1);
+        setVoteStatus(true);
       } else if (result.action === 'removed') {
         setNewLikesCount(prev => prev - 1);
+        setVoteStatus(null);
       } else if (result.action === 'changed') {
         setNewLikesCount(prev => prev + 1);
         setNewDislikesCount(prev => prev - 1);
+        setVoteStatus(true);
       }
     } catch (error) {
       console.error('点赞失败:', error);
@@ -356,11 +437,14 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
       
       if (result.action === 'added') {
         setNewDislikesCount(prev => prev + 1);
+        setVoteStatus(false);
       } else if (result.action === 'removed') {
         setNewDislikesCount(prev => prev - 1);
+        setVoteStatus(null);
       } else if (result.action === 'changed') {
         setNewDislikesCount(prev => prev + 1);
         setNewLikesCount(prev => prev - 1);
+        setVoteStatus(false);
       }
     } catch (error) {
       console.error('点踩失败:', error);
@@ -413,95 +497,146 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
     }
   };
 
+  const handleMouseEnter = () => {
+    setHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    setHovered(false);
+  };
+
+  const formatTimeAgo = (dateString) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) return `${diffInSeconds}秒前`;
+    
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) return `${diffInMinutes}分钟前`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}小时前`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 30) return `${diffInDays}天前`;
+    
+    const diffInMonths = Math.floor(diffInDays / 30);
+    if (diffInMonths < 12) return `${diffInMonths}个月前`;
+    
+    const diffInYears = Math.floor(diffInMonths / 12);
+    return `${diffInYears}年前`;
+  };
+
   return (
     <Card 
       sx={{ 
         display: 'flex', 
         flexDirection: 'column',
         width: '100%',
-        boxShadow: 'none',
-        borderRadius: 0,
+        borderRadius: '16px',
         overflow: 'hidden',
-        outline: isSelected ? '3px solid #2196f3' : 'none',
+        boxShadow: isSelected 
+          ? '0 0 0 3px #2563eb, 0 10px 15px -3px rgba(0, 0, 0, 0.1)' 
+          : '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
         opacity: isSelectionMode && !isSelected ? 0.7 : 1,
-        backgroundColor: 'transparent',
-        border: 'none',
+        backgroundColor: 'background.paper',
         transition: 'all 0.3s ease',
-        position: 'relative', // 添加相对定位
+        position: 'relative',
+        transform: hovered && !isSelectionMode ? 'translateY(-8px)' : 'translateY(0)',
+        '&:hover': {
+          boxShadow: isSelected 
+            ? '0 0 0 3px #2563eb, 0 20px 25px -5px rgba(0, 0, 0, 0.1)' 
+            : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        },
       }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* 添加用户标识徽章 */}
       {isCurrentUserImage && (
         <Box
           sx={{
             position: 'absolute',
-            top: '8px',
-            left: '8px',
+            top: '12px',
+            left: '12px',
             backgroundColor: 'primary.main',
             color: 'white',
             padding: '4px 8px',
-            borderRadius: '4px',
+            borderRadius: '8px',
             fontSize: '0.75rem',
-            fontWeight: 'bold',
+            fontWeight: '600',
             zIndex: 2,
-            boxShadow: '2px 2px 0 rgba(0,0,0,0.2)',
-            border: '2px solid white',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            border: '1.5px solid rgba(255,255,255,0.8)',
             animation: 'pulse 2s infinite',
-            '@keyframes pulse': {
-              '0%': {
-                transform: 'scale(1)',
-                boxShadow: '0 0 0 0 rgba(92, 107, 192, 0.7)',
-              },
-              '70%': {
-                transform: 'scale(1.05)',
-                boxShadow: '0 0 0 10px rgba(92, 107, 192, 0)',
-              },
-              '100%': {
-                transform: 'scale(1)',
-                boxShadow: '0 0 0 0 rgba(92, 107, 192, 0)',
-              },
-            },
           }}
         >
           我的图片
         </Box>
       )}
 
+      {/* 添加日期标签 */}
+      <Box
+        sx={{
+          position: 'absolute',
+          bottom: '12px',
+          left: '12px',
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          color: 'white',
+          padding: '4px 8px',
+          borderRadius: '8px',
+          fontSize: '0.7rem',
+          fontWeight: '500',
+          zIndex: 2,
+          opacity: hovered ? 1 : 0,
+          transform: hovered ? 'translateY(0)' : 'translateY(8px)',
+          transition: 'all 0.3s ease',
+        }}
+      >
+        {formatTimeAgo(image.created_at)}
+      </Box>
+
       <Box
         sx={{
           position: 'relative',
           width: '100%',
-          paddingTop: isLongImage ? '150%' : '100%',
-          backgroundColor: 'rgba(0, 0, 0, 0.1)',
-          borderRadius: 1,
+          paddingTop: isLongImage ? '140%' : '100%',
+          backgroundColor: 'rgba(0, 0, 0, 0.05)',
+          borderRadius: '12px 12px 0 0',
           overflow: 'hidden',
-          cursor: 'pointer',
-          // 为当前用户的图片添加特殊边框效果
-          border: isCurrentUserImage ? '3px solid #5c6bc0' : 'none',
-          boxShadow: isCurrentUserImage ? '0 0 15px rgba(92, 107, 192, 0.3)' : 'none',
+          cursor: !isSelectionMode ? 'pointer' : 'default',
         }}
         onClick={() => !isSelectionMode && onView(image)}
       >
         {!imageLoaded && !imageError && (
-          <CircularProgress 
-            size={30} 
+          <Box
             sx={{ 
               position: 'absolute',
-              top: '50%',
-              left: '50%',
-              marginTop: '-15px',
-              marginLeft: '-15px'
-            }} 
-          />
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(0, 0, 0, 0.03)',
+            }}
+          >
+            <CircularProgress 
+              size={30} 
+              sx={{ color: 'primary.main' }}
+            /> 
+          </Box>
         )}
         
         <Box
           sx={{
             position: 'absolute',
-            top: '3px',
-            left: '3px',
-            right: '3px',
-            bottom: '3px',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             pointerEvents: isEditingVotes ? 'none' : 'auto'
           }}
         >
@@ -510,12 +645,13 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
             alt={image.title || '图片'} 
             onLoad={handleImageLoad}
             onError={() => setImageError(true)}
+            className={imageLoaded ? 'image-loaded' : 'image-loading'}
             style={{ 
               width: '100%',
               height: '100%',
-              objectFit: isLongImage ? 'cover' : 'cover',
-              opacity: imageLoaded ? 1 : 0,
-              transition: 'opacity 0.3s ease-in-out'
+              objectFit: 'cover',
+              transition: 'transform 0.5s ease-out',
+              transform: hovered && !isSelectionMode ? 'scale(1.05)' : 'scale(1)'
             }} 
           />
       </Box>
@@ -524,23 +660,34 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
         <Box
           sx={{
             position: 'absolute',
-            bottom: '3px',
-            right: '3px',
-            padding: '8px',
-            background: 'linear-gradient(135deg, transparent, rgba(0,0,0,0.7))',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: hovered ? 
+              'linear-gradient(0deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.3) 30%, rgba(0,0,0,0) 60%)' : 
+              'linear-gradient(0deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 40%)',
+            opacity: 1,
+            transition: 'all 0.3s ease',
+          }}
+        />
+
+        {/* 票数和操作区 */}
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: '0',
+            left: '0',
+            right: '0',
+            padding: '16px',
             display: 'flex',
             alignItems: 'center',
-            gap: 1,
-            opacity: 1,
-            transition: 'opacity 0.3s ease',
-            borderRadius: '2px',
+            justifyContent: 'space-between',
             zIndex: 2,
-            maxWidth: 'fit-content',
-            pointerEvents: 'auto'  // 确保按钮区域始终可以点击
           }}
         >
           {isAdmin && isEditingVotes ? (
-            <>
+            <Box sx={{ display: 'flex', gap: 1, width: '100%' }}>
               <TextField
                 size="small"
                 type="number"
@@ -550,12 +697,19 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
                   width: '70px',
                   '& .MuiInputBase-input': {
                     color: 'white',
-                    padding: '4px 8px',
                     fontSize: '0.875rem',
+                    padding: '8px 12px',
                   },
                   '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(0, 0, 0, 0.4)',
                     '& fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.23)',
+                      borderColor: 'rgba(255, 255, 255, 0.3)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(255, 255, 255, 0.5)',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'primary.main',
                     },
                   },
                 }}
@@ -569,12 +723,19 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
                   width: '70px',
                   '& .MuiInputBase-input': {
                     color: 'white',
-                    padding: '4px 8px',
                     fontSize: '0.875rem',
+                    padding: '8px 12px',
                   },
                   '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(0, 0, 0, 0.4)',
                     '& fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.23)',
+                      borderColor: 'rgba(255, 255, 255, 0.3)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(255, 255, 255, 0.5)',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'primary.main',
                     },
                   },
                 }}
@@ -587,13 +748,13 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
                 }}
                 disabled={isUpdating}
                 sx={{
-                  color: 'primary.main',
-                  bgcolor: 'rgba(0, 0, 0, 0.3)',
-                  '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.5)' }
+                  color: 'success.main',
+                  bgcolor: 'rgba(0, 0, 0, 0.4)',
+                  '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.6)' }
                 }}
               >
-                <CheckCircleIcon sx={{ fontSize: '1.2rem' }} />
-        </IconButton>
+                <CheckCircleIcon />
+              </IconButton>
               <IconButton
                 size="small"
                 onClick={(e) => {
@@ -604,95 +765,137 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
                 }}
                 sx={{
                   color: 'error.main',
-                  bgcolor: 'rgba(0, 0, 0, 0.3)',
-                  '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.5)' }
+                  bgcolor: 'rgba(0, 0, 0, 0.4)',
+                  '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.6)' }
                 }}
               >
-                <CancelIcon sx={{ fontSize: '1.2rem' }} />
-        </IconButton>
-            </>
+                <CancelIcon />
+              </IconButton>
+            </Box>
           ) : (
             <>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <IconButton
-                  size="small"
-                  onClick={handleLike}
-                  disabled={isUpdating}
-                  sx={{
-                    color: voteStatus === true ? 'primary.main' : 'white',
-                    padding: '4px',
-                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                    '&:hover': {
-                      color: 'primary.light',
-                      backgroundColor: 'rgba(0, 0, 0, 0.5)'
-                    }
-                  }}
-                >
-                  <ThumbUpIcon sx={{ fontSize: '1rem' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <IconButton
+                    size="small"
+                    onClick={handleLike}
+                    disabled={isUpdating}
+                    sx={{
+                      color: voteStatus === true ? 'primary.light' : 'white',
+                      backgroundColor: voteStatus === true ? 'rgba(37, 99, 235, 0.2)' : 'rgba(0, 0, 0, 0.4)',
+                      '&:hover': {
+                        backgroundColor: voteStatus === true ? 'rgba(37, 99, 235, 0.3)' : 'rgba(0, 0, 0, 0.5)',
+                      },
+                      width: 36,
+                      height: 36,
+                    }}
+                  >
+                    <ThumbUpIcon sx={{ fontSize: '1.2rem' }} />
+                  </IconButton>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'white',
+                      fontWeight: 'bold',
+                      fontSize: '0.875rem',
+                    }}
+                  >
+                    {newLikesCount}
+        </Typography>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <IconButton 
+                    size="small" 
+                    onClick={handleDislike}
+                    disabled={isUpdating}
+                    sx={{
+                      color: voteStatus === false ? 'error.light' : 'white',
+                      backgroundColor: voteStatus === false ? 'rgba(239, 68, 68, 0.2)' : 'rgba(0, 0, 0, 0.4)',
+                      '&:hover': {
+                        backgroundColor: voteStatus === false ? 'rgba(239, 68, 68, 0.3)' : 'rgba(0, 0, 0, 0.5)',
+                      },
+                      width: 36,
+                      height: 36,
+                    }}
+                  >
+                    <ThumbDownIcon sx={{ fontSize: '1.2rem' }} />
+                  </IconButton>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'white',
+                      fontWeight: 'bold',
+                      fontSize: '0.875rem',
+                    }}
+                  >
+                    {newDislikesCount}
+        </Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                {isAdmin && (
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditingVotes(true);
+                    }}
+                    sx={{
+                      color: 'white',
+                      backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                      '&:hover': {
+                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                      },
+                      width: 36,
+                      height: 36,
+                    }}
+                  >
+                    <EditIcon sx={{ fontSize: '1.2rem' }} />
+                  </IconButton>
+                )}
+                
+                {hasEditPermission && (
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(image);
+                    }}
+                    sx={{
+                      color: 'white',
+                      backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                      '&:hover': {
+                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                      },
+                      width: 36,
+                      height: 36,
+                      display: { xs: 'none', sm: 'flex' }
+                    }}
+                  >
+                    <EditIcon sx={{ fontSize: '1.2rem' }} />
         </IconButton>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: 'white',
-                    minWidth: 20,
-                    fontSize: '0.75rem',
-                    fontWeight: 'bold',
-                  }}
-                >
-                  {newLikesCount}
-                </Typography>
+                )}
+                
+                {isAdmin && (
+                  <IconButton
+                    size="small"
+                    onClick={handlePinImage}
+                    sx={{ 
+                      color: image.is_pinned ? 'warning.light' : 'white',
+                      backgroundColor: image.is_pinned ? 'rgba(245, 158, 11, 0.2)' : 'rgba(0, 0, 0, 0.4)',
+                      '&:hover': {
+                        backgroundColor: image.is_pinned ? 'rgba(245, 158, 11, 0.3)' : 'rgba(0, 0, 0, 0.6)',
+                      },
+                      width: 36,
+                      height: 36,
+                    }}
+                  >
+                    <PushPinIcon sx={{ fontSize: '1.2rem' }} />
+        </IconButton>
+                )}
               </Box>
-
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <IconButton 
-            size="small" 
-                  onClick={handleDislike}
-                  disabled={isUpdating}
-                  sx={{
-                    color: voteStatus === false ? 'error.main' : 'white',
-                    padding: '4px',
-                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                    '&:hover': {
-                      color: 'error.light',
-                      backgroundColor: 'rgba(0, 0, 0, 0.5)'
-                    }
-                  }}
-                >
-                  <ThumbDownIcon sx={{ fontSize: '1rem' }} />
-                </IconButton>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: 'white',
-                    minWidth: 20,
-                    fontSize: '0.75rem',
-                    fontWeight: 'bold',
-                  }}
-                >
-                  {newDislikesCount}
-                </Typography>
-              </Box>
-
-              {isAdmin && (
-                <IconButton
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsEditingVotes(true);
-                  }}
-                  sx={{
-                    color: 'white',
-                    padding: '4px',
-                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                    '&:hover': {
-                      color: 'primary.light',
-                      backgroundColor: 'rgba(0, 0, 0, 0.5)'
-                    }
-                  }}
-                >
-                  <EditIcon sx={{ fontSize: '1rem' }} />
-          </IconButton>
-        )}
             </>
           )}
         </Box>
@@ -701,14 +904,16 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
           <Box
             sx={{
               position: 'absolute',
-              top: '11px',
-              right: '11px',
+              top: '12px',
+              right: '12px',
               backgroundColor: 'error.main',
               color: 'white',
               padding: '4px 8px',
-              borderRadius: 1,
+              borderRadius: '8px',
               fontSize: '0.75rem',
-              zIndex: 1
+              fontWeight: '600',
+              zIndex: 2,
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
             }}
           >
             待审核
@@ -718,31 +923,56 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
         {isSelectionMode && (
           <Checkbox
             checked={isSelected}
+            onChange={(e) => onSelect(image.id)}
             sx={{
               position: 'absolute',
-              top: '11px',
-              left: '11px',
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-              borderRadius: '50%',
-              '&:hover': {
-                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              top: '8px',
+              left: '8px',
+              backgroundColor: 'rgba(0, 0, 0, 0.4)',
+              borderRadius: '8px',
+              padding: '4px',
+              zIndex: 3,
+              '&.Mui-checked': {
+                color: 'primary.main'
               },
-              zIndex: 1
+              '&:hover': {
+                backgroundColor: 'rgba(0, 0, 0, 0.6)',
+              },
             }}
           />
         )}
 
-        {/* 移动端删除按钮 - 仅对用户自己的图片显示 */}
-        {isCurrentUserImage && (
+        {/* 移动端控制按钮 */}
+        {hovered && !isSelectionMode && (isCurrentUserImage || isAdmin) && (
           <Box
             sx={{
               position: 'absolute',
-              top: '8px',
-              right: '8px',
-              display: { xs: 'block', md: 'none' },
-              zIndex: 3
+              top: '12px',
+              right: '12px',
+              display: 'flex',
+              gap: 1,
+              zIndex: 3,
             }}
           >
+          <IconButton 
+            size="small" 
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(image);
+              }}
+              sx={{
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                color: 'text.primary',
+                '&:hover': {
+                  backgroundColor: 'white',
+                },
+                width: 36,
+                height: 36,
+                boxShadow: 2,
+              }}
+            >
+              <EditIcon fontSize="small" />
+          </IconButton>
           <IconButton 
             size="small" 
               onClick={(e) => {
@@ -750,16 +980,19 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
                 setShowDeleteConfirm(true);
               }}
               sx={{
-                backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                color: '#fff',
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                color: 'error.main',
                 '&:hover': {
-                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                  backgroundColor: 'white',
+                  color: 'error.dark',
                 },
-                border: '2px solid rgba(255, 255, 255, 0.8)',
+                width: 36,
+                height: 36,
+                boxShadow: 2,
               }}
             >
               <DeleteIcon fontSize="small" />
-            </IconButton>
+          </IconButton>
           </Box>
         )}
 
@@ -769,24 +1002,25 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
           onClose={() => setShowDeleteConfirm(false)}
           PaperProps={{
             sx: {
-              width: '90%',
+              borderRadius: 3,
+              p: 1,
+              boxShadow: 3,
               maxWidth: '400px',
-              p: 2,
-              m: 2
+              width: '90%',
             }
           }}
         >
-          <DialogTitle sx={{ pb: 1 }}>确认删除</DialogTitle>
+          <DialogTitle sx={{ pb: 1, fontWeight: 600 }}>确认删除</DialogTitle>
           <DialogContent>
             <Typography variant="body1">
               确定要删除这张图片吗？此操作无法撤销。
             </Typography>
           </DialogContent>
-          <DialogActions sx={{ pt: 2 }}>
+          <DialogActions sx={{ p: 2, pt: 1 }}>
             <Button 
               onClick={() => setShowDeleteConfirm(false)}
               variant="outlined"
-              size="small"
+              size="medium"
             >
               取消
             </Button>
@@ -796,73 +1030,14 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
                 onDelete(image.id);
               }}
               variant="contained"
-            color="error" 
-              size="small"
+              color="error" 
+              size="medium"
+              sx={{ ml: 1 }}
             >
               删除
             </Button>
           </DialogActions>
         </Dialog>
-
-        {/* 桌面端编辑和删除按钮 */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '11px',
-            right: '11px',
-            display: 'flex',
-            gap: 1,
-            opacity: 1, // 修改为始终显示
-            transition: 'opacity 0.2s',
-            zIndex: 1
-          }}
-        >
-          {isAdmin && (
-            <IconButton
-              size="small"
-              onClick={handlePinImage}
-              sx={{ 
-                bgcolor: 'rgba(0, 0, 0, 0.5)',
-                color: image.is_pinned ? 'primary.main' : 'white',
-                '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.7)' }
-              }}
-            >
-              <PushPinIcon fontSize="small" />
-          </IconButton>
-          )}
-          {(hasEditPermission || image.user_id === userId) && (
-            <>
-              <IconButton 
-                size="small" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(image);
-                }}
-                sx={{ 
-                  bgcolor: 'rgba(0, 0, 0, 0.5)',
-                  color: 'white',
-                  '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.7)' }
-                }}
-              >
-                <EditIcon fontSize="small" />
-              </IconButton>
-              <IconButton 
-                size="small" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(image.id);
-                }}
-                sx={{ 
-                  bgcolor: 'rgba(0, 0, 0, 0.5)',
-                  color: 'white',
-                  '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.7)' }
-                }}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </>
-          )}
-        </Box>
       </Box>
     </Card>
   );
@@ -874,6 +1049,10 @@ const ImageDetailModal = ({ open, image, onClose, images, currentIndex, onPrevio
   const [loading, setLoading] = useState(true);
   const [showControls, setShowControls] = useState(true);
   const [isMobile] = useState(window.innerWidth <= 768);
+  const [swipeDirection, setSwipeDirection] = useState(null);
+  const [touchStartX, setTouchStartX] = useState(0);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const imageRef = useRef(null);
 
   // 使用 useMemo 计算导航状态
   const { canShowPrevious, canShowNext } = useMemo(() => ({
@@ -886,15 +1065,60 @@ const ImageDetailModal = ({ open, image, onClose, images, currentIndex, onPrevio
   };
 
   const handleZoomIn = () => {
-    setScale(prev => Math.min(prev + 0.1, 3));
+    setScale(prev => Math.min(prev + 0.2, 3));
   };
 
   const handleZoomOut = () => {
-    setScale(prev => Math.max(prev - 0.1, 0.1));
+    setScale(prev => Math.max(prev - 0.2, 0.5));
   };
 
   const handleResetZoom = () => {
     setScale(1);
+  };
+
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+      });
+      setIsFullScreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullScreen(false);
+      }
+    }
+  };
+
+  const handleTouchStart = (e) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!touchStartX) return;
+    
+    const touchEndX = e.touches[0].clientX;
+    const diff = touchStartX - touchEndX;
+    
+    // 设置滑动方向
+    if (diff > 50) {
+      setSwipeDirection('left');
+    } else if (diff < -50) {
+      setSwipeDirection('right');
+    } else {
+      setSwipeDirection(null);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (swipeDirection === 'left' && canShowNext) {
+      onNext?.();
+    } else if (swipeDirection === 'right' && canShowPrevious) {
+      onPrevious?.();
+    }
+    
+    setTouchStartX(0);
+    setSwipeDirection(null);
   };
 
   const handleKeyDown = useCallback((event) => {
@@ -902,8 +1126,18 @@ const ImageDetailModal = ({ open, image, onClose, images, currentIndex, onPrevio
       onPrevious?.();
     } else if (event.key === 'ArrowRight') {
       onNext?.();
+    } else if (event.key === 'Escape') {
+      onClose?.();
+    } else if (event.key === '+' || event.key === '=') {
+      handleZoomIn();
+    } else if (event.key === '-') {
+      handleZoomOut();
+    } else if (event.key === '0') {
+      handleResetZoom();
+    } else if (event.key === 'f') {
+      toggleFullScreen();
     }
-  }, [onPrevious, onNext]);
+  }, [onPrevious, onNext, onClose]);
 
   useEffect(() => {
     if (open) {
@@ -917,19 +1151,19 @@ const ImageDetailModal = ({ open, image, onClose, images, currentIndex, onPrevio
     if (open) {
       setScale(1);
       setLoading(true);
+      setIsFullScreen(false);
     }
   }, [open, image]);
 
-  // 记录状态变化
+  // 处理全屏状态变化
   useEffect(() => {
-    console.log('Modal state:', {
-      currentIndex,
-      imagesLength: images?.length,
-      canShowPrevious,
-      canShowNext,
-      imageId: image?.id
-    });
-  }, [currentIndex, images, image, canShowPrevious, canShowNext]);
+    const handleFullscreenChange = () => {
+      setIsFullScreen(!!document.fullscreenElement);
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   // 如果没有图片，不显示模态框
   if (!open || !image) return null;
@@ -940,187 +1174,373 @@ const ImageDetailModal = ({ open, image, onClose, images, currentIndex, onPrevio
   // 如果没有有效的图片URL，不显示模态框
   if (!imageUrl) return null;
 
+  // 格式化创建时间
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('zh-CN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  };
+
   return (
-    <Dialog
+    <Modal
       open={open}
       onClose={onClose}
-      maxWidth={false}
-      fullWidth
+      closeAfterTransition
       sx={{
-        '& .MuiDialog-paper': {
-          backgroundColor: 'black',
-          maxWidth: '100vw',
-          maxHeight: '100vh',
-          m: 0,
-          position: 'relative'
-        }
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backdropFilter: 'blur(5px)',
       }}
     >
-      <IconButton
-        onClick={onClose}
-        sx={{
-        position: 'absolute',
-          right: 8,
-          top: 8,
-          color: 'white',
-          zIndex: 2,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          '&:hover': {
-            backgroundColor: 'rgba(0, 0, 0, 0.7)'
-          }
-        }}
-      >
-        <CloseIcon />
-      </IconButton>
-
       <Box
         sx={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'black',
+          zIndex: 1300,
         display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          width: '100vw',
-          height: '100vh',
-          position: 'relative',
-          userSelect: 'none'
+        flexDirection: 'column',
+          overflow: 'hidden',
         }}
-        onMouseEnter={() => setShowControls(true)}
-        onMouseLeave={() => setShowControls(false)}
-        onTouchStart={() => setShowControls(true)}
-        onTouchEnd={() => setTimeout(() => setShowControls(false), 3000)}
+        onMouseMove={() => setShowControls(true)}
+        onMouseLeave={() => setTimeout(() => setShowControls(false), 2000)}
+        onClick={() => setShowControls(true)}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
-        {/* 导航按钮容器 */}
+        {/* 顶部控制栏 */}
         <Box
           sx={{
             position: 'absolute',
             top: 0,
             left: 0,
             right: 0,
-            bottom: 0,
+            padding: '16px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            padding: isMobile ? '0 8px' : '0 16px',
-            opacity: showControls ? 1 : 0,
-            transition: 'opacity 0.3s',
-            zIndex: 1,
-            pointerEvents: 'none'
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(10px)',
+            zIndex: 5,
+            transform: showControls ? 'translateY(0)' : 'translateY(-100%)',
+            transition: 'transform 0.3s ease',
           }}
         >
-          {/* 左箭头 */}
-          <Box sx={{ pointerEvents: 'auto', minWidth: isMobile ? 36 : 48 }}>
+          <Typography
+            variant="subtitle1"
+            sx={{
+              color: 'white',
+              fontWeight: 600,
+              fontSize: { xs: '0.9rem', sm: '1rem' },
+              opacity: 0.9,
+            }}
+          >
+            {currentIndex + 1} / {images?.length || 1}
+          </Typography>
+          
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <IconButton
+              onClick={toggleFullScreen}
+              sx={{
+                color: 'white',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.2)' },
+              }}
+            >
+              {isFullScreen ? <CropFreeIcon /> : <ZoomInIcon />}
+            </IconButton>
+            <IconButton
+              onClick={onClose}
+              sx={{
+                color: 'white',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.2)' },
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </Box>
+        
+        {/* 主内容区 */}
+        <Box
+          sx={{
+            flex: 1,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          {/* 左右导航按钮 */}
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              left: 0,
+              width: '80px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: showControls && canShowPrevious ? 1 : 0,
+              transition: 'opacity 0.3s ease',
+              zIndex: 4,
+              cursor: canShowPrevious ? 'pointer' : 'default',
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (canShowPrevious) onPrevious?.();
+            }}
+          >
             {canShowPrevious && (
               <IconButton
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPrevious?.();
-                }}
                 sx={{
                   color: 'white',
                   backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                  backdropFilter: 'blur(8px)',
                   '&:hover': {
-                    backgroundColor: 'rgba(0, 0, 0, 0.7)'
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                    transform: 'scale(1.1)',
                   },
-                  width: isMobile ? 36 : 48,
-                  height: isMobile ? 36 : 48
+                  width: 48,
+                  height: 48,
+                  transition: 'all 0.2s ease',
                 }}
               >
-                <ArrowBackIcon sx={{ fontSize: isMobile ? 20 : 24 }} />
+                <ArrowBackIcon fontSize="large" />
               </IconButton>
             )}
           </Box>
 
-          {/* 右箭头 */}
-          <Box sx={{ pointerEvents: 'auto', minWidth: isMobile ? 36 : 48 }}>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              right: 0,
+              width: '80px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: showControls && canShowNext ? 1 : 0,
+              transition: 'opacity 0.3s ease',
+              zIndex: 4,
+              cursor: canShowNext ? 'pointer' : 'default',
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (canShowNext) onNext?.();
+            }}
+          >
             {canShowNext && (
               <IconButton
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onNext?.();
-                }}
                 sx={{
                   color: 'white',
                   backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                  backdropFilter: 'blur(8px)',
                   '&:hover': {
-                    backgroundColor: 'rgba(0, 0, 0, 0.7)'
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                    transform: 'scale(1.1)',
                   },
-                  width: isMobile ? 36 : 48,
-                  height: isMobile ? 36 : 48
+                  width: 48,
+                  height: 48,
+                  transition: 'all 0.2s ease',
                 }}
               >
-                <ArrowForwardIcon sx={{ fontSize: isMobile ? 20 : 24 }} />
+                <ArrowForwardIcon fontSize="large" />
               </IconButton>
             )}
           </Box>
-        </Box>
-        
-        {/* 图片容器 */}
-        <Box 
-          sx={{ 
-            position: 'relative',
-            width: '100%', 
-            height: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            overflow: 'auto'
-          }}
-        >
+
+          {/* 图片加载指示器 */}
           {loading && (
-            <CircularProgress
+            <Box
               sx={{
                 position: 'absolute',
                 top: '50%',
                 left: '50%',
-                marginTop: '-20px',
-                marginLeft: '-20px',
-                color: 'white'
+                transform: 'translate(-50%, -50%)',
+                zIndex: 3,
               }}
-            />
+            >
+              <CircularProgress 
+                sx={{ color: 'primary.main' }} 
+                size={40} 
+              />
+            </Box>
           )}
-          <img
-            src={imageUrl}
-            alt={image.description || ''}
+
+          {/* 图片容器 */}
+          <Box
+            ref={imageRef}
+          sx={{ 
+            width: '100%', 
+              height: '100%',
+              overflow: 'auto',
+            display: 'flex',
+            justifyContent: 'center',
+              alignItems: 'center',
+              padding: 2,
+          }}
+        >
+          <img 
+              src={imageUrl}
+              alt={image.description || ''}
             onLoad={handleImageLoad}
             style={{ 
               maxWidth: '100%', 
               maxHeight: '100%',
+                width: 'auto',
+                height: 'auto',
               objectFit: 'contain',
               transform: `scale(${scale})`,
-              transition: 'transform 0.2s',
-              display: loading ? 'none' : 'block'
+                transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                display: loading ? 'none' : 'block',
             }} 
           />
         </Box>
         
-        {/* 缩放控制按钮组 */}
+          {/* 滑动指示器 */}
+          {swipeDirection && (
+            <Box
+              sx={{
+                position: 'absolute',
+                top: '50%',
+                left: swipeDirection === 'right' ? '10%' : 'auto',
+                right: swipeDirection === 'left' ? '10%' : 'auto',
+                transform: 'translateY(-50%)',
+                backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                backdropFilter: 'blur(4px)',
+                borderRadius: '50%',
+                width: 60,
+                height: 60,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 3,
+              }}
+            >
+              {swipeDirection === 'left' ? (
+                <ArrowForwardIcon sx={{ color: 'white', fontSize: 30 }} />
+              ) : (
+                <ArrowBackIcon sx={{ color: 'white', fontSize: 30 }} />
+              )}
+            </Box>
+          )}
+        </Box>
+
+        {/* 底部控制栏 */}
         <Box
           sx={{
             position: 'absolute',
-            bottom: 16,
-            left: '50%',
-            transform: 'translateX(-50%)',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            padding: '16px',
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(10px)',
             display: 'flex',
+            flexDirection: 'column',
             gap: 1,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            padding: 1,
-            borderRadius: 1,
-            opacity: showControls ? 1 : 0,
-            transition: 'opacity 0.3s',
-            zIndex: 1
+            transform: showControls ? 'translateY(0)' : 'translateY(100%)',
+            transition: 'transform 0.3s ease',
+            zIndex: 5,
           }}
         >
-          <IconButton onClick={handleZoomOut} sx={{ color: 'white' }}>
-            <RemoveIcon />
-          </IconButton>
-          <IconButton onClick={handleResetZoom} sx={{ color: 'white' }}>
-            <CropFreeIcon />
-          </IconButton>
-          <IconButton onClick={handleZoomIn} sx={{ color: 'white' }}>
-            <AddIcon />
-          </IconButton>
+          {/* 上传时间 */}
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'rgba(255, 255, 255, 0.8)',
+              fontSize: '0.8rem',
+            }}
+          >
+            上传于 {formatDate(image.created_at)}
+        </Typography>
+        
+          {/* 图片描述 */}
+          {image.description && (
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'white',
+                opacity: 0.9,
+                fontSize: '0.9rem',
+                maxHeight: '60px',
+                overflow: 'auto',
+              }}
+            >
+              {image.description}
+        </Typography>
+          )}
+
+          {/* 缩放控制 */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 2,
+              mt: 1,
+            }}
+          >
+            <IconButton
+              onClick={handleZoomOut}
+              sx={{
+                color: 'white',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.2)' },
+              }}
+            >
+              <RemoveIcon />
+            </IconButton>
+            
+            <Typography
+              variant="caption"
+              sx={{ color: 'white', fontSize: '0.85rem', minWidth: '60px', textAlign: 'center' }}
+            >
+              {Math.round(scale * 100)}%
+            </Typography>
+            
+            <IconButton
+              onClick={handleZoomIn}
+              sx={{
+                color: 'white',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.2)' },
+              }}
+            >
+              <AddIcon />
+            </IconButton>
+            
+            <IconButton
+              onClick={handleResetZoom}
+              sx={{
+                color: 'white',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.2)' },
+              }}
+            >
+              <RestartAltIcon />
+            </IconButton>
+          </Box>
+        </Box>
       </Box>
-      </Box>
-    </Dialog>
+    </Modal>
   );
 };
 
@@ -1683,7 +2103,8 @@ function GalleryApp() {
     if (isSm) return 2;
     if (isMd) return 3;
     if (isLg) return 4;
-    return 5; // xl
+    if (isLg && window.innerWidth >= 1440) return 5;
+    return 6; // xl
   };
 
   // 获取图片列表
@@ -2108,37 +2529,65 @@ function GalleryApp() {
           <AppBar
             position="sticky"
             sx={{
-              backgroundColor: '#ffffff',
-              borderBottom: '3px solid #5c6bc0',
-              boxShadow: '0 4px 0 rgba(92, 107, 192, 0.2)',
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(8px)',
+              borderBottom: '1px solid rgba(229, 231, 235, 0.8)',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
               marginBottom: '2rem',
-              '& .MuiTypography-root': {
-                fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-              },
-              '& .app-title': {
-                fontFamily: '"Press Start 2P", cursive',
-              },
             }}
+            elevation={0}
           >
             <Container maxWidth="lg">
-              <Toolbar sx={{ justifyContent: 'space-between' }}>
-                <Typography variant="h6" className="app-title" sx={{ color: '#5c6bc0' }}>
-                  Report Gallery
+              <Toolbar sx={{ justifyContent: 'space-between', py: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <ScienceIcon sx={{ 
+                    color: 'primary.main', 
+                    mr: 1.5, 
+                    fontSize: { xs: 24, sm: 28 } 
+                  }} />
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      color: 'text.primary', 
+                      fontWeight: 700,
+                      fontSize: { xs: '1.1rem', sm: '1.3rem' },
+                      backgroundImage: 'linear-gradient(45deg, #f97316, #f59e0b)',
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      color: 'transparent'
+                    }}
+                  >
+                    M-Profile Lab
                 </Typography>
-                <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2 }}>
+                </Box>
+                
+                <Box sx={{ 
+                  display: { xs: 'none', md: 'flex' }, 
+                  gap: 1.5,
+                  '& .MuiButton-root': {
+                    borderRadius: '8px',
+                    minWidth: 'auto',
+                    px: 2,
+                    py: 0.75,
+                    transition: 'all 0.2s ease',
+                  }
+                }}>
                   {isAdmin && (
                     <Button
                       color="error"
                       variant="outlined"
+                      startIcon={<LogoutIcon />}
                       onClick={handleLogout}
                       size="small"
+                      sx={{ fontWeight: 500 }}
                     >
                       退出管理
                     </Button>
                   )}
                   <Button
                     color="primary"
-                    variant="outlined"
+                    variant="text"
+                    startIcon={<FemaleIcon />}
                     href="./female.html"
                     size="small"
                   >
@@ -2146,7 +2595,8 @@ function GalleryApp() {
                   </Button>
                   <Button
                     color="primary"
-                    variant="outlined"
+                    variant="text"
+                    startIcon={<MaleIcon />}
                     href="./male.html"
                     size="small"
                   >
@@ -2154,7 +2604,8 @@ function GalleryApp() {
                   </Button>
                   <Button
                     color="primary"
-                    variant="outlined"
+                    variant="text"
+                    startIcon={<ScienceIcon />}
                     href="./s.html"
                     size="small"
                   >
@@ -2162,7 +2613,8 @@ function GalleryApp() {
                   </Button>
                   <Button
                     color="primary"
-                    variant="outlined"
+                    variant="text"
+                    startIcon={<MessageIcon />}
                     href="./message.html"
                     size="small"
                   >
@@ -2170,22 +2622,31 @@ function GalleryApp() {
                   </Button>
                   <Button
                     color="primary"
-                    variant="outlined"
+                    variant="contained"
                     startIcon={<HomeIcon />}
                     href="./index.html"
                     size="small"
+                    sx={{ 
+                      boxShadow: 1,
+                      '&:hover': {
+                        boxShadow: 2,
+                      }
+                    }}
                   >
                     返回首页
                   </Button>
                 </Box>
+                
                 <IconButton
                   sx={{ 
-                    display: { xs: 'block', md: 'none' },
-                    color: '#5c6bc0',
-                    border: '2px solid #5c6bc0',
+                    display: { xs: 'flex', md: 'none' },
+                    color: 'primary.main',
+                    backgroundColor: 'rgba(249, 115, 22, 0.05)',
                     '&:hover': {
-                      backgroundColor: 'rgba(92, 107, 192, 0.1)'
-                    }
+                      backgroundColor: 'rgba(249, 115, 22, 0.1)'
+                    },
+                    width: 40,
+                    height: 40
                   }}
                   onClick={() => setMobileMenuOpen(true)}
                 >
@@ -2202,201 +2663,282 @@ function GalleryApp() {
             PaperProps={{
               sx: {
                 backgroundColor: '#ffffff',
-                width: 250,
-                border: '3px solid #5c6bc0',
+                width: 280,
+                boxShadow: '-4px 0 15px rgba(0, 0, 0, 0.05)',
+                pt: 2,
                 '& .MuiListItem-root': {
-                  borderBottom: '1px solid rgba(92, 107, 192, 0.2)'
+                  borderRadius: 1.5,
+                  mx: 2,
+                  mb: 1
                 }
               }
             }}
           >
+            <Box sx={{ px: 3, pb: 2, display: 'flex', alignItems: 'center' }}>
+              <ScienceIcon sx={{ color: 'primary.main', mr: 1.5 }} />
+            <Typography 
+                variant="h6" 
+              sx={{ 
+                  fontWeight: 700,
+                  backgroundImage: 'linear-gradient(45deg, #f97316, #f59e0b)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  color: 'transparent'
+                }}
+              >
+                M-Profile Lab
+              </Typography>
+            </Box>
+            <Divider sx={{ mb: 2 }} />
             <List>
               {isAdmin && (
-                <ListItem button onClick={handleLogout}>
-                  <ListItemIcon><LogoutIcon sx={{ color: '#5c6bc0' }} /></ListItemIcon>
-                  <ListItemText primary="退出管理" sx={{ color: '#5c6bc0' }} />
+                <ListItem 
+                  button 
+                  onClick={handleLogout}
+                  sx={{
+                    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                    '&:hover': { backgroundColor: 'rgba(239, 68, 68, 0.15)' }
+                  }}
+                >
+                  <ListItemIcon><LogoutIcon sx={{ color: 'error.main' }} /></ListItemIcon>
+                  <ListItemText primary="退出管理" primaryTypographyProps={{ fontWeight: 500, color: 'error.main' }} />
                 </ListItem>
               )}
-              <ListItem button component="a" href="./female.html">
-                <ListItemIcon><FemaleIcon sx={{ color: '#5c6bc0' }} /></ListItemIcon>
-                <ListItemText primary="女M版" sx={{ color: '#5c6bc0' }} />
+              <ListItem 
+                button 
+                component="a" 
+                href="./female.html"
+                sx={{ '&:hover': { backgroundColor: 'rgba(249, 115, 22, 0.08)' } }}
+              >
+                <ListItemIcon><FemaleIcon sx={{ color: 'primary.main' }} /></ListItemIcon>
+                <ListItemText primary="女M版" primaryTypographyProps={{ fontWeight: 500 }} />
               </ListItem>
-              <ListItem button component="a" href="./male.html">
-                <ListItemIcon><MaleIcon sx={{ color: '#5c6bc0' }} /></ListItemIcon>
-                <ListItemText primary="男M版" sx={{ color: '#5c6bc0' }} />
+              <ListItem 
+                button 
+                component="a" 
+                href="./male.html"
+                sx={{ '&:hover': { backgroundColor: 'rgba(249, 115, 22, 0.08)' } }}
+              >
+                <ListItemIcon><MaleIcon sx={{ color: 'primary.main' }} /></ListItemIcon>
+                <ListItemText primary="男M版" primaryTypographyProps={{ fontWeight: 500 }} />
               </ListItem>
-              <ListItem button component="a" href="./s.html">
-                <ListItemIcon><ScienceIcon sx={{ color: '#5c6bc0' }} /></ListItemIcon>
-                <ListItemText primary="S版" sx={{ color: '#5c6bc0' }} />
+              <ListItem 
+                button 
+                component="a" 
+                href="./s.html"
+                sx={{ '&:hover': { backgroundColor: 'rgba(249, 115, 22, 0.08)' } }}
+              >
+                <ListItemIcon><ScienceIcon sx={{ color: 'primary.main' }} /></ListItemIcon>
+                <ListItemText primary="S版" primaryTypographyProps={{ fontWeight: 500 }} />
               </ListItem>
-              <ListItem button component="a" href="./message.html">
-                <ListItemIcon><MessageIcon sx={{ color: '#5c6bc0' }} /></ListItemIcon>
-                <ListItemText primary="留言板" sx={{ color: '#5c6bc0' }} />
+              <ListItem 
+                button 
+                component="a" 
+                href="./message.html"
+                sx={{ '&:hover': { backgroundColor: 'rgba(249, 115, 22, 0.08)' } }}
+              >
+                <ListItemIcon><MessageIcon sx={{ color: 'primary.main' }} /></ListItemIcon>
+                <ListItemText primary="留言板" primaryTypographyProps={{ fontWeight: 500 }} />
               </ListItem>
-              <ListItem button component="a" href="./index.html">
-                <ListItemIcon><HomeIcon sx={{ color: '#5c6bc0' }} /></ListItemIcon>
-                <ListItemText primary="返回首页" sx={{ color: '#5c6bc0' }} />
+              <ListItem 
+                button 
+                component="a" 
+                href="./index.html"
+                sx={{ 
+                  backgroundColor: 'rgba(249, 115, 22, 0.08)',
+                  '&:hover': { backgroundColor: 'rgba(249, 115, 22, 0.15)' },
+                  mt: 2
+                }}
+              >
+                <ListItemIcon><HomeIcon sx={{ color: 'primary.main' }} /></ListItemIcon>
+                <ListItemText primary="返回首页" primaryTypographyProps={{ fontWeight: 500 }} />
               </ListItem>
             </List>
           </Drawer>
 
-          <Container maxWidth="xl" sx={{ px: { xs: 1, sm: 2, md: 3 }, pt: 4 }}>
+          <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: 4 }}>
             <Box
               sx={{
                 width: '100%',
                 display: 'flex',
+                flexDirection: 'column',
                 justifyContent: 'center',
                 alignItems: 'center',
                 mb: 6,
-                px: { xs: 2, sm: 3, md: 4 },
               }}
+              className="fade-in"
             >
-              <Box
-                sx={{
-                  width: 'auto',
-                  minWidth: { xs: '280px', sm: '400px', md: '500px' },
+              <style dangerouslySetInnerHTML={{
+                __html: `
+                  .force-orange-title {
+                    color: #f97316 !important;
+                    text-shadow: 0 0 15px rgba(249, 115, 22, 0.5), 2px 2px 0 rgba(249, 115, 22, 0.3) !important;
+                    font-weight: 800 !important;
+                    animation: float-title 3s ease-in-out infinite !important;
+                  }
+                  
+                  @keyframes float-title {
+                    0% { transform: translateY(0); }
+                    50% { transform: translateY(-10px); }
+                    100% { transform: translateY(0); }
+                  }
+                `
+              }} />
+            
+              <Typography 
+                variant="h2" 
+                component="h1"
+                className="pixel-title-orange force-orange-title"
+                sx={{ 
+                  fontSize: { 
+                    xs: '2rem', 
+                    sm: '2.5rem', 
+                    md: '3rem' 
+                  },
+                  textAlign: 'center',
+                  mb: 2,
+                  color: '#f97316 !important',
+                  textShadow: '0 0 15px rgba(249, 115, 22, 0.5), 2px 2px 0 rgba(249, 115, 22, 0.3)',
+                  background: 'transparent',
+                  WebkitTextFillColor: '#f97316', // 确保文本颜色在所有浏览器中一致
+                  filter: 'drop-shadow(0 0 8px rgba(249, 115, 22, 0.5))', // 额外的阴影效果
                   position: 'relative',
-                  padding: { xs: '1rem', sm: '1.5rem', md: '2rem' },
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                  borderRadius: '8px',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    border: '2px solid #5c6bc0',
-                    borderRadius: '8px',
-                    transform: 'translate(-8px, -8px)',
-                    zIndex: -1,
+                  // 添加更明显的悬浮效果
+                  animation: 'float 3s ease-in-out infinite',
+                  '@keyframes float': {
+                    '0%': { transform: 'translateY(0)' },
+                    '50%': { transform: 'translateY(-10px)' },
+                    '100%': { transform: 'translateY(0)' },
                   },
-                  '&::after': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    border: '2px solid #26a69a',
-                    borderRadius: '8px',
-                    transform: 'translate(8px, 8px)',
-                    zIndex: -1,
-                  },
+              }}
+              onDoubleClick={handleTitleDoubleClick}
+            >
+              Report Gallery
+            </Typography>
+
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{
+                  maxWidth: '600px',
+                  textAlign: 'center',
+                  mb: 4,
+                  fontSize: { xs: '0.9rem', sm: '1rem' }
                 }}
               >
-                <Typography 
-                  variant="h3" 
-                  component="h1"
-                  className="main-title"
-                  sx={{ 
-                    fontSize: { 
-                      xs: '1.5rem', 
-                      sm: '2rem', 
-                      md: '2.5rem' 
-                    },
-                    fontFamily: '"Press Start 2P", cursive',
-                    textAlign: 'center',
-                    width: 'auto',
-                    display: 'inline-block',
-                    position: 'relative',
-                    padding: { xs: '0.5rem', sm: '0.75rem', md: '1rem' },
-                    background: 'linear-gradient(45deg, #5c6bc0, #26a69a)',
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    color: 'transparent',
-                    textShadow: '2px 2px 4px rgba(0,0,0,0.1)',
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      inset: 0,
-                      background: 'linear-gradient(45deg, #5c6bc0, #26a69a)',
-                      opacity: 0.1,
-                      borderRadius: '4px',
-                      zIndex: -1,
-                    }
-                  }}
-                  onDoubleClick={handleTitleDoubleClick}
-                >
-                  Report Gallery
-                </Typography>
-              </Box>
-            </Box>
-
-            <Box sx={{ 
-              mb: 4, 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: 2
-            }}>
-              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                浏览、分享和点评各种测评报告，记录你的测评经历
+              </Typography>
+              
+              <Box sx={{ 
+                display: 'flex',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                gap: 2,
+                mb: 4,
+                width: '100%',
+                maxWidth: '800px',
+              }}>
               <Button
                 variant="contained"
                 startIcon={<AddPhotoAlternateIcon />}
                 onClick={() => setUploadDialogOpen(true)}
+                  size="large"
                 sx={{
-                    backgroundColor: 'primary.main',
+                    px: 3,
+                    py: 1.5,
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    boxShadow: 3,
                   '&:hover': {
-                      backgroundColor: 'primary.dark',
+                      boxShadow: 4,
                   },
+                    backgroundImage: 'linear-gradient(45deg, #f97316, #f59e0b)',
                 }}
               >
                 上传图片
               </Button>
 
               {isAdmin && (
-                  <>
-                    <Button
-                      variant="outlined"
-                      color={isSelectionMode ? "secondary" : "primary"}
-                      startIcon={isSelectionMode ? <CloseIcon /> : <CheckBoxOutlineBlankIcon />}
-                      onClick={() => {
-                        setIsSelectionMode(!isSelectionMode);
-                        setSelectedImages(new Set());
-                      }}
-                    >
-                      {isSelectionMode ? '退出选择' : '选择图片'}
-                    </Button>
-                    {isSelectionMode && (
-                      <>
-                        <Button
-                          variant="outlined"
-                          color="primary"
-                          onClick={handleSelectAll}
-                        >
-                          {selectedImages.size === images.length ? '取消全选' : '全选'}
-                        </Button>
-                        <Button
-                          variant="contained"
-                          color="error"
-                          startIcon={<DeleteIcon />}
-                          onClick={handleBatchDelete}
-                          disabled={selectedImages.size === 0}
-                        >
-                          删除选中 ({selectedImages.size})
-                        </Button>
-                      </>
-                    )}
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      startIcon={<DeleteSweepIcon />}
-                      onClick={handleClearAll}
-                    >
-                      清空图片
-                    </Button>
-                  </>
+                  <Button
+                    variant={isSelectionMode ? "contained" : "outlined"}
+                    color={isSelectionMode ? "secondary" : "primary"}
+                    startIcon={isSelectionMode ? <CloseIcon /> : <CheckBoxOutlineBlankIcon />}
+                    onClick={() => {
+                      setIsSelectionMode(!isSelectionMode);
+                      setSelectedImages(new Set());
+                    }}
+                    size="large"
+                    sx={{
+                      px: 3,
+                      py: 1.5,
+                      fontSize: '1rem',
+                      backgroundColor: isSelectionMode ? 'rgba(245, 158, 11, 0.9)' : 'transparent',
+                    }}
+                  >
+                    {isSelectionMode ? '退出选择' : '选择图片'}
+                  </Button>
                 )}
               </Box>
-
+              
+              {isAdmin && isSelectionMode && (
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexWrap: 'wrap',
+                  justifyContent: 'center', 
+                  gap: 2, 
+                  mb: 4,
+                  className: "fade-in"
+                }}>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={handleSelectAll}
+                    size="medium"
+                  >
+                    {selectedImages.size === images.length ? '取消全选' : '全选'}
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="error"
+                    startIcon={<DeleteIcon />}
+                    onClick={handleBatchDelete}
+                    disabled={selectedImages.size === 0}
+                    size="medium"
+                  >
+                    删除选中 ({selectedImages.size})
+                  </Button>
+                  
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<DeleteSweepIcon />}
+                    onClick={handleClearAll}
+                    size="medium"
+                  >
+                    清空图片
+                  </Button>
+                </Box>
+              )}
+              
               {isAdmin && (
-                <FormControl size="small" sx={{ minWidth: 120 }}>
-                  <InputLabel>筛选</InputLabel>
+                <FormControl 
+                  size="small" 
+                  sx={{ 
+                    width: { xs: '100%', sm: 'auto' },
+                    minWidth: 150,
+                    mt: isSelectionMode ? 0 : 2,
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      backgroundColor: 'background.paper',
+                      boxShadow: 1,
+                      borderColor: 'primary.main'
+                    }
+                  }}
+                >
+                  <InputLabel>筛选图片</InputLabel>
                   <Select
                     value={filter}
-                    label="筛选"
+                    label="筛选图片"
                     onChange={(e) => setFilter(e.target.value)}
                   >
                     <MenuItem value="all">全部图片</MenuItem>

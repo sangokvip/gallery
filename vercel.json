@@ -16,18 +16,6 @@
       "dest": "/assets/$1"
     },
     {
-      "src": "/sitemap.xml",
-      "dest": "/sitemap.xml"
-    },
-    {
-      "src": "/robots.txt",
-      "dest": "/robots.txt"
-    },
-    {
-      "src": "/google9c7d25b2a7a9d8c2.html",
-      "dest": "/google9c7d25b2a7a9d8c2.html"
-    },
-    {
       "src": "/(.*)",
       "dest": "/index.html"
     }

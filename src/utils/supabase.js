@@ -248,11 +248,11 @@ export const galleryApi = {
       // 2. 删除存储中的文件
       if (image.image_path) {
         console.log('正在删除存储文件:', image.image_path);
-        const { error: storageError } = await supabase.storage
-          .from('gallery')
-          .remove([image.image_path]);
+      const { error: storageError } = await supabase.storage
+        .from('gallery')
+        .remove([image.image_path]);
 
-        if (storageError) {
+      if (storageError) {
           console.error('删除存储文件失败:', storageError);
           // 继续执行数据库记录的删除
         }

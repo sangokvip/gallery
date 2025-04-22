@@ -1314,9 +1314,12 @@ function MessageApp() {
           >
             <Container maxWidth="lg">
               <Toolbar sx={{ justifyContent: 'space-between' }}>
-                <Typography variant="h6" className="pixel-title-pink" sx={{ color: '#ff69b4' }}>
-                  留言板-XR无下限
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <ScienceIcon sx={{ display: 'flex', color: '#ff69b4', mr: 1 }} />
+                  <Typography variant="h6" className="pixel-title-pink" sx={{ color: '#ff69b4' }}>
+                    M-Profile Lab
+                  </Typography>
+                </Box>
                 <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2 }}>
                   {isAdmin && (
                     <Button
@@ -1404,6 +1407,12 @@ function MessageApp() {
               }
             }}
           >
+            <Box sx={{ px: 3, py: 2, display: 'flex', alignItems: 'center', borderBottom: '2px solid rgba(255, 105, 180, 0.2)' }}>
+              <ScienceIcon sx={{ color: '#ff69b4', mr: 1 }} />
+              <Typography variant="h6" sx={{ color: '#ff69b4', fontWeight: 'bold' }}>
+                M-Profile Lab
+              </Typography>
+            </Box>
             <List>
               {isAdmin && (
                 <ListItem button onClick={handleLogout}>

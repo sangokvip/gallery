@@ -372,3 +372,46 @@
     background-position: 0% 50%;
   }
 }
+
+/* 橙色像素风格标题 */
+.pixel-title-orange {
+  font-family: 'Press Start 2P', cursive;
+  color: #f97316;
+  text-shadow: 2px 2px 0 rgba(249, 115, 22, 0.3);
+  letter-spacing: 2px;
+}
+
+/* 橙色主题 */
+.pixel-theme-orange {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #fffbf5;
+  color: #f97316;
+  image-rendering: pixelated;
+}
+
+/* 橙色像素风格按钮 */
+.pixel-button-orange {
+  position: relative;
+  padding: 8px 16px;
+  background: #f97316;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  image-rendering: pixelated;
+}
+
+.pixel-button-orange::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border: 2px solid #f97316;
+  transition: all 0.2s ease;
+}
+
+.pixel-button-orange:hover {
+  animation: pixelHover 0.5s infinite;
+}
