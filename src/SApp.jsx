@@ -768,19 +768,69 @@ function SApp() {
           }
         }}>
           <Box ref={reportRef} sx={{ p: 3 }}>
-            <Typography variant="h4" gutterBottom align="center" sx={{ color: 'red', mb: 4 }}>
+            <Typography variant="h4" gutterBottom align="center" sx={{ color: 'red', mb: 3 }}>
               S型人格测试报告
             </Typography>
 
-            {/* 雷达图保留 */}
-            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
-              <RadarChart width={600} height={400} data={getRadarData()}>
+            {/* 雷达图部分 - 修改尺寸和布局 */}
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              mb: 3,
+              maxWidth: '100%',
+              height: { xs: '300px', sm: '350px' },
+              '& .recharts-wrapper': {
+                maxWidth: '100%',
+                height: '100% !important'
+              }
+            }}>
+              <RadarChart 
+                width={400} 
+                height={300} 
+                data={getRadarData()}
+                style={{
+                  margin: '0 auto'
+                }}
+              >
                 <PolarGrid />
-                <PolarAngleAxis dataKey="category" />
-                <PolarRadiusAxis angle={30} domain={[0, 6]} />
-                <Radar name="得分" dataKey="value" stroke="#ff0000" fill="#ff0000" fillOpacity={0.6} />
+                <PolarAngleAxis 
+                  dataKey="category" 
+                  tick={{ 
+                    fill: '#ff0000',
+                    fontSize: 12
+                  }}
+                />
+                <PolarRadiusAxis 
+                  angle={30} 
+                  domain={[0, 6]} 
+                  tick={{ 
+                    fill: '#666666',
+                    fontSize: 11
+                  }}
+                />
+                <Radar 
+                  name="得分" 
+                  dataKey="value" 
+                  stroke="#ff0000" 
+                  fill="#ff0000" 
+                  fillOpacity={0.6} 
+                />
               </RadarChart>
             </Box>
+
+            {/* 添加一个简短的说明文字 */}
+            <Typography 
+              variant="body2" 
+              align="center" 
+              sx={{ 
+                mb: 4, 
+                color: 'text.secondary',
+                fontSize: '0.9rem',
+                px: 2
+              }}
+            >
+              ↑ 上方雷达图展示了各个类别的平均得分，下方是详细的评分分类 ↓
+            </Typography>
 
             {/* 按评分分组展示所有项目 */}
             {Object.entries(getGroupedRatings()).map(([rating, items]) => {

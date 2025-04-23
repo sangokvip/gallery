@@ -490,10 +490,17 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
   const handlePinImage = async (e) => {
     e.stopPropagation();
     try {
-      await galleryApi.pinImage(image.id);
-      window.location.reload(); // 刷新页面以显示最新排序
+      setIsUpdating(true);
+      const result = await galleryApi.pinImage(image.id);
+      
+      // 触发父组件的刷新
+      if (result.success) {
+        onEdit({ ...image, is_pinned: result.is_pinned });
+      }
     } catch (error) {
-      console.error('置顶失败:', error);
+      console.error('置顶操作失败:', error);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -850,38 +857,18 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
                       },
                       width: 36,
                       height: 36,
+                      display: { xs: 'flex', sm: 'flex' }
                     }}
                   >
                     <EditIcon sx={{ fontSize: '1.2rem' }} />
                   </IconButton>
                 )}
                 
-                {hasEditPermission && (
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit(image);
-                    }}
-                    sx={{
-                      color: 'white',
-                      backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                      '&:hover': {
-                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                      },
-                      width: 36,
-                      height: 36,
-                      display: { xs: 'none', sm: 'flex' }
-                    }}
-                  >
-                    <EditIcon sx={{ fontSize: '1.2rem' }} />
-        </IconButton>
-                )}
-                
                 {isAdmin && (
                   <IconButton
                     size="small"
                     onClick={handlePinImage}
+                    disabled={isUpdating}
                     sx={{ 
                       color: image.is_pinned ? 'warning.light' : 'white',
                       backgroundColor: image.is_pinned ? 'rgba(245, 158, 11, 0.2)' : 'rgba(0, 0, 0, 0.4)',
@@ -893,7 +880,7 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
                     }}
                   >
                     <PushPinIcon sx={{ fontSize: '1.2rem' }} />
-        </IconButton>
+                  </IconButton>
                 )}
               </Box>
             </>
@@ -969,6 +956,7 @@ const ImageCard = ({ image, onView, onDelete, onEdit, isAdmin, isSelected, isSel
                 width: 36,
                 height: 36,
                 boxShadow: 2,
+                display: { xs: 'flex', sm: 'none' }  // 只在移动端显示
               }}
             >
               <EditIcon fontSize="small" />
@@ -2116,6 +2104,8 @@ function GalleryApp() {
     
     if (!isLoadingMore) {
       setLoading(true);
+      // 重置图片列表
+      setImages([]);
     } else {
       setLoadingMore(true);
     }
@@ -2151,13 +2141,17 @@ function GalleryApp() {
         current_user_id: userId
       }));
       
-      // 对图片进行排序，将当前用户上传的图片排在前面
+      // 对图片进行排序
       filteredData.sort((a, b) => {
-        // 首先按照是否是当前用户的图片排序
+        // 首先按照置顶状态排序
+        if (a.is_pinned && !b.is_pinned) return -1;
+        if (!a.is_pinned && b.is_pinned) return 1;
+        
+        // 其次按照是否是当前用户的图片排序
         if (a.user_id === userId && b.user_id !== userId) return -1;
         if (a.user_id !== userId && b.user_id === userId) return 1;
         
-        // 其次按照创建时间降序排序（新的在前）
+        // 最后按照创建时间降序排序（新的在前）
         return new Date(b.created_at) - new Date(a.created_at);
       });
 
@@ -2167,6 +2161,7 @@ function GalleryApp() {
         firstImage: filteredData[0] 
       });
       
+      // 更新图片列表
       setImages(prev => isLoadingMore ? [...prev, ...filteredData] : filteredData);
       setTotalCount(count);
       setHasMore(moreAvailable);
@@ -2368,6 +2363,27 @@ function GalleryApp() {
 
   // 编辑图片信息
   const handleEditImage = (image) => {
+    // 处理置顶状态更新
+    if ('is_pinned' in image) {
+      // 更新本地状态
+      setImages(prevImages => 
+        prevImages.map(img => 
+          img.id === image.id 
+            ? { ...img, is_pinned: image.is_pinned }
+            : img
+        )
+      );
+      
+      setSnackbarMessage(image.is_pinned ? '已置顶' : '已取消置顶');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+      
+      // 重新获取图片列表以更新排序
+      fetchImages();
+      return;
+    }
+
+    // 处理普通编辑
     setEditImage(image);
     setEditDialogOpen(true);
   };
@@ -2520,6 +2536,14 @@ function GalleryApp() {
     setViewingImage(null);
     setCurrentImageIndex(-1);
   }, []);
+
+  // 修改上传对话框的关闭处理
+  const handleCloseUploadDialog = useCallback(() => {
+    setUploadDialogOpen(false);
+    // 重置页码并重新获取图片列表
+    setPage(0);
+    fetchImages(false);
+  }, [fetchImages]);
 
   return (
     <ErrorBoundary>
@@ -3016,7 +3040,7 @@ function GalleryApp() {
 
             <UploadDialog 
               open={uploadDialogOpen}
-              onClose={() => setUploadDialogOpen(false)}
+              onClose={handleCloseUploadDialog}
               onUpload={handleUpload}
               isAdmin={isAdmin}
             />

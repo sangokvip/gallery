@@ -558,7 +558,7 @@ export const galleryApi = {
 
       if (updateError) throw updateError;
 
-      return { success: true };
+      return { success: true, is_pinned: !currentImage.is_pinned };
     } catch (error) {
       console.error('置顶图片失败:', error);
       throw error;
