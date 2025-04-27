@@ -658,7 +658,11 @@ function App() {
               sx={{
                 padding: '12px 32px',
                 fontSize: '1.1rem',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
+                backgroundColor: '#ff69b4',
+                '&:hover': {
+                  backgroundColor: '#ff1493'
+                }
               }}
               className="pixel-button-pink"
               onClick={() => {
@@ -788,10 +792,15 @@ function App() {
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 4, gap: 4 }}>
           <Button
             variant="contained"
-            color="primary"
             size="large"
             onClick={() => setOpenReport(true)}
-            sx={{ minWidth: 200 }}
+            sx={{ 
+              minWidth: 200,
+              backgroundColor: '#ff69b4',
+              '&:hover': {
+                backgroundColor: '#ff1493'
+              }
+            }}
             className="pixel-button-pink"
           >
             生成报告
@@ -1000,7 +1009,12 @@ function App() {
             <Button
               onClick={handleExportImage}
               variant="contained"
-              color="primary"
+              sx={{
+                backgroundColor: '#ff69b4',
+                '&:hover': {
+                  backgroundColor: '#ff1493'
+                }
+              }}
               className="pixel-button-pink"
             >
               保存为图片
@@ -1008,7 +1022,12 @@ function App() {
             <Button
               onClick={handleExportPDF}
               variant="contained"
-              color="secondary"
+              sx={{
+                backgroundColor: '#ff69b4',
+                '&:hover': {
+                  backgroundColor: '#ff1493'
+                }
+              }}
               className="pixel-button-pink"
             >
               保存为PDF

@@ -702,8 +702,19 @@ function App() {
               variant="contained"
               size="large"
               startIcon={<AutorenewIcon />}
-              className="pixel-button"
-              sx={{ fontFamily: 'inherit' }}
+              sx={{ 
+                fontFamily: 'inherit',
+                backgroundColor: '#000000',
+                '&:hover': {
+                  backgroundColor: '#333333'
+                },
+                outline: 'none',
+                border: 'none',
+                boxShadow: 'none',
+                '&::before': {
+                  display: 'none'
+                }
+              }}
               onClick={() => {
                 const newRatings = {};
                 Object.entries(CATEGORIES).forEach(([category, items]) => {
@@ -842,11 +853,21 @@ function App() {
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 4, gap: 4 }}>
           <Button
             variant="contained"
-            color="primary"
             size="large"
             onClick={() => setOpenReport(true)}
-            className="pixel-button"
-            sx={{ minWidth: 200 }}
+            sx={{ 
+              minWidth: 200,
+              backgroundColor: '#000000',
+              '&:hover': {
+                backgroundColor: '#333333'
+              },
+              outline: 'none',
+              border: 'none',
+              boxShadow: 'none',
+              '&::before': {
+                display: 'none'
+              }
+            }}
           >
             生成报告
           </Button>
@@ -1056,14 +1077,36 @@ function App() {
             <Button
               onClick={handleExportImage}
               variant="contained"
-              color="primary"
+              sx={{
+                backgroundColor: '#000000',
+                '&:hover': {
+                  backgroundColor: '#333333'
+                },
+                outline: 'none',
+                border: 'none',
+                boxShadow: 'none',
+                '&::before': {
+                  display: 'none'
+                }
+              }}
             >
               保存为图片
             </Button>
             <Button
               onClick={handleExportPDF}
               variant="contained"
-              color="secondary"
+              sx={{
+                backgroundColor: '#000000',
+                '&:hover': {
+                  backgroundColor: '#333333'
+                },
+                outline: 'none',
+                border: 'none',
+                boxShadow: 'none',
+                '&::before': {
+                  display: 'none'
+                }
+              }}
             >
               保存为PDF
             </Button>
