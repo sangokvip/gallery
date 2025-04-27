@@ -187,6 +187,9 @@ function App() {
   const handleExportImage = async () => {
     if (reportRef.current) {
       try {
+        setSnackbarMessage('正在生成图片，请稍候...');
+        setSnackbarOpen(true);
+        
         // 创建一个新的容器元素，用于生成图片
         const container = document.createElement('div');
         container.style.position = 'absolute';
@@ -258,44 +261,130 @@ function App() {
 
         // 清理临时元素
         document.body.removeChild(container);
+        
+        // 检测设备类型
+        const isAndroid = /android/i.test(navigator.userAgent);
+        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        const isMobile = isAndroid || isIOS;
+        
+        // 准备文件数据
+        const imageQuality = 0.95; // 高质量但稍微减小文件大小
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', imageQuality));
+        const url = URL.createObjectURL(blob);
+        const filename = '女M自评报告.png';
 
-        // 将Canvas转换为Blob
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
-
-        // 保存图片
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        if (isMobile) {
-          try {
-            // 尝试使用Web Share API
-            if (navigator.share && navigator.canShare) {
-              const file = new File([blob], 'M自评报告.png', { type: 'image/png' });
+        try {
+          // 移动设备优先尝试使用分享API
+          if (isMobile && navigator.share && navigator.canShare) {
+            try {
+              const file = new File([blob], filename, { type: 'image/png' });
               const shareData = { files: [file] };
               
               if (navigator.canShare(shareData)) {
                 await navigator.share(shareData);
-                setSnackbarMessage('图片已准备好分享！');
+                setSnackbarMessage('分享成功！');
+                setSnackbarOpen(true);
+                URL.revokeObjectURL(url);
+                return;
+              }
+            } catch (shareError) {
+              console.warn('分享API失败，尝试备选方案:', shareError);
+            }
+          }
+          
+          // 针对安卓设备的优化方法
+          if (isAndroid) {
+            try {
+              // 方法1: 使用download属性
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = filename;
+              link.target = '_blank';
+              link.style.display = 'none';
+              document.body.appendChild(link);
+              link.click();
+              setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+              }, 1000);
+              
+              setSnackbarMessage('报告已导出！请检查您的下载文件夹');
+              setSnackbarOpen(true);
+              return;
+            } catch (androidError) {
+              console.warn('安卓下载方法1失败:', androidError);
+            }
+            
+            try {
+              // 方法2: 打开新窗口展示图片
+              const newTab = window.open();
+              if (newTab) {
+                newTab.document.write(`
+                  <html>
+                    <head>
+                      <title>女M自评报告</title>
+                      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                      <style>body{margin:0;display:flex;justify-content:center;align-items:center;flex-direction:column;padding:20px;}</style>
+                    </head>
+                    <body>
+                      <h2>长按图片保存</h2>
+                      <img src="${url}" style="max-width:100%;" alt="女M自评报告">
+                    </body>
+                  </html>
+                `);
+                newTab.document.close();
+                setSnackbarMessage('请在新页面长按图片保存');
                 setSnackbarOpen(true);
                 return;
               }
+            } catch (windowError) {
+              console.warn('安卓下载方法2失败:', windowError);
             }
-          } catch (error) {
-            console.error('分享失败:', error);
+          }
+          
+          // 通用下载方法
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          link.click();
+          
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+          }, 1000);
+          
+          setSnackbarMessage('报告已保存为高清图片！');
+          setSnackbarOpen(true);
+        } catch (downloadError) {
+          console.error('下载过程出错:', downloadError);
+          
+          // 最后的备选方案：直接展示图片让用户手动保存
+          const imageUrl = canvas.toDataURL('image/png', imageQuality);
+          const newWindow = window.open();
+          if (newWindow) {
+            newWindow.document.write(`
+              <html>
+                <head>
+                  <title>女M自评报告</title>
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <style>body{margin:0;padding:20px;text-align:center;}</style>
+                </head>
+                <body>
+                  <h2>请长按或右键保存图片</h2>
+                  <img src="${imageUrl}" style="max-width:100%;" alt="女M自评报告">
+                </body>
+              </html>
+            `);
+            newWindow.document.close();
+            setSnackbarMessage('请在新页面保存图片');
+            setSnackbarOpen(true);
+          } else {
+            setSnackbarMessage('无法自动下载，请尝试使用截图功能');
+            setSnackbarOpen(true);
           }
         }
-
-        // 默认下载方法
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'M自评报告.png';
-        link.click();
-        URL.revokeObjectURL(url);
-        setSnackbarMessage('报告已保存为高清图片！');
-        setSnackbarOpen(true);
-
       } catch (error) {
         console.error('导出图片错误:', error);
-        setSnackbarMessage('导出图片失败，请重试');
+        setSnackbarMessage('导出图片失败，请尝试使用截图功能');
         setSnackbarOpen(true);
       }
     }
