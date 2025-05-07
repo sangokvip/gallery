@@ -268,21 +268,25 @@ function App() {
         const isMobile = isAndroid || isIOS;
         
         // 准备文件数据
-        const imageQuality = 0.95; // 高质量但稍微减小文件大小
+        const imageQuality = 0.92; // 稍微降低质量以减小文件大小
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', imageQuality));
         const url = URL.createObjectURL(blob);
-        const filename = '女M自评报告.png';
+        const filename = '自评报告.png';
 
         try {
-          // 移动设备优先尝试使用分享API
-          if (isMobile && navigator.share && navigator.canShare) {
+          // 移动设备优先尝试使用 Web Share API
+          if (isMobile && navigator.share) {
             try {
               const file = new File([blob], filename, { type: 'image/png' });
-              const shareData = { files: [file] };
+              const shareData = { 
+                files: [file],
+                title: '自评报告',
+                text: '分享自评报告'
+              };
               
               if (navigator.canShare(shareData)) {
                 await navigator.share(shareData);
-                setSnackbarMessage('分享成功！');
+                setSnackbarMessage('分享成功！可以保存到相册');
                 setSnackbarOpen(true);
                 URL.revokeObjectURL(url);
                 return;
@@ -295,50 +299,87 @@ function App() {
           // 针对安卓设备的优化方法
           if (isAndroid) {
             try {
-              // 方法1: 使用download属性
-              const link = document.createElement('a');
-              link.href = url;
-              link.download = filename;
-              link.target = '_blank';
-              link.style.display = 'none';
-              document.body.appendChild(link);
-              link.click();
-              setTimeout(() => {
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-              }, 1000);
-              
-              setSnackbarMessage('报告已导出！请检查您的下载文件夹');
-              setSnackbarOpen(true);
-              return;
-            } catch (androidError) {
-              console.warn('安卓下载方法1失败:', androidError);
-            }
-            
-            try {
-              // 方法2: 打开新窗口展示图片
-              const newTab = window.open();
-              if (newTab) {
-                newTab.document.write(`
-                  <html>
-                    <head>
-                      <title>女M自评报告</title>
-                      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                      <style>body{margin:0;display:flex;justify-content:center;align-items:center;flex-direction:column;padding:20px;}</style>
-                    </head>
-                    <body>
-                      <h2>长按图片保存</h2>
-                      <img src="${url}" style="max-width:100%;" alt="女M自评报告">
-                    </body>
-                  </html>
-                `);
-                newTab.document.close();
-                setSnackbarMessage('请在新页面长按图片保存');
+              // 方法1: 使用MediaStore API (如果可用)
+              if ('chooseFileSystemEntries' in window || 'showSaveFilePicker' in window) {
+                const handle = await window.showSaveFilePicker({
+                  suggestedName: filename,
+                  types: [{
+                    description: 'PNG图片',
+                    accept: {'image/png': ['.png']},
+                  }],
+                });
+                const writable = await handle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+                setSnackbarMessage('报告已保存到手机！');
                 setSnackbarOpen(true);
+                URL.revokeObjectURL(url);
                 return;
               }
-            } catch (windowError) {
-              console.warn('安卓下载方法2失败:', windowError);
+            } catch (fsError) {
+              console.warn('文件系统API失败:', fsError);
+            }
+
+            // 方法2: 使用新页面展示并提供保存指导
+            const newTab = window.open();
+            if (newTab) {
+              newTab.document.write(`
+                <html>
+                  <head>
+                    <title>自评报告</title>
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <style>
+                      body {
+                        margin: 0;
+                        padding: 20px;
+                        font-family: system-ui;
+                        background: #f5f5f5;
+                        color: #333;
+                      }
+                      .container {
+                        max-width: 600px;
+                        margin: 0 auto;
+                        text-align: center;
+                      }
+                      .instructions {
+                        background: #fff;
+                        padding: 15px;
+                        border-radius: 10px;
+                        margin-bottom: 20px;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                      }
+                      .image-container {
+                        background: #fff;
+                        padding: 10px;
+                        border-radius: 10px;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                      }
+                      img {
+                        max-width: 100%;
+                        height: auto;
+                        border-radius: 5px;
+                      }
+                    </style>
+                  </head>
+                  <body>
+                    <div class="container">
+                      <div class="instructions">
+                        <h2>保存图片到相册</h2>
+                        <p>1. 长按下方图片</p>
+                        <p>2. 选择"保存图片"或"下载图片"</p>
+                        <p>3. 图片将保存到您的相册</p>
+                      </div>
+                      <div class="image-container">
+                        <img src="${url}" alt="自评报告">
+                      </div>
+                    </div>
+                  </body>
+                </html>
+              `);
+              newTab.document.close();
+              setSnackbarMessage('请按照新页面提示保存图片');
+              setSnackbarOpen(true);
+              return;
             }
           }
           
@@ -352,35 +393,28 @@ function App() {
             URL.revokeObjectURL(url);
           }, 1000);
           
-          setSnackbarMessage('报告已保存为高清图片！');
+          setSnackbarMessage('报告已保存！');
           setSnackbarOpen(true);
-        } catch (downloadError) {
-          console.error('下载过程出错:', downloadError);
+        } catch (error) {
+          console.error('导出图片错误:', error);
           
-          // 最后的备选方案：直接展示图片让用户手动保存
+          // 最后的备选方案：直接在当前页面展示图片
           const imageUrl = canvas.toDataURL('image/png', imageQuality);
-          const newWindow = window.open();
-          if (newWindow) {
-            newWindow.document.write(`
-              <html>
-                <head>
-                  <title>女M自评报告</title>
-                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                  <style>body{margin:0;padding:20px;text-align:center;}</style>
-                </head>
-                <body>
-                  <h2>请长按或右键保存图片</h2>
-                  <img src="${imageUrl}" style="max-width:100%;" alt="女M自评报告">
-                </body>
-              </html>
-            `);
-            newWindow.document.close();
-            setSnackbarMessage('请在新页面保存图片');
-            setSnackbarOpen(true);
-          } else {
-            setSnackbarMessage('无法自动下载，请尝试使用截图功能');
-            setSnackbarOpen(true);
-          }
+          const modalContent = document.createElement('div');
+          modalContent.innerHTML = `
+            <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;">
+              <div style="background:white;padding:20px;border-radius:10px;max-width:90%;text-align:center;">
+                <h3 style="margin-top:0;">保存图片说明</h3>
+                <p>1. 长按下方图片</p>
+                <p>2. 选择"保存图片"选项</p>
+                <img src="${imageUrl}" style="max-width:100%;margin:10px 0;border-radius:5px;" alt="自评报告">
+                <button onclick="this.parentElement.parentElement.remove()" style="margin-top:15px;padding:8px 20px;border:none;background:#007AFF;color:white;border-radius:5px;cursor:pointer;">关闭</button>
+              </div>
+            </div>
+          `;
+          document.body.appendChild(modalContent.firstChild);
+          setSnackbarMessage('请按照提示保存图片');
+          setSnackbarOpen(true);
         }
       } catch (error) {
         console.error('导出图片错误:', error);
