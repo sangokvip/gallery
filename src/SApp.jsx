@@ -732,7 +732,7 @@ function SApp() {
               }
             }}
             onDoubleClick={handleTitleDoubleClick}
-            title="双击激活数据库诊断功能"
+            title="m-profile.top"
           >
             How 'S' I Could Be?
           </Typography>

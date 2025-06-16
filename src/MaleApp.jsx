@@ -774,7 +774,7 @@ function App() {
               }
             }}
             onDoubleClick={handleTitleDoubleClick}
-            title="双击激活数据库诊断功能"
+            title="m-profile.top"
           >
             男M自评报告
           </Typography>

@@ -741,7 +741,7 @@ function App() {
             }}
             className="pixel-title-pink"
             onDoubleClick={handleTitleDoubleClick}
-            title="双击激活数据库诊断功能"
+            title="m-profile.top"
           >
             女M自评报告
           </Typography>
