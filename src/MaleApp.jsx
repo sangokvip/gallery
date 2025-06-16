@@ -1168,47 +1168,45 @@ function App() {
             }
           }}
         >
-          <DialogTitle sx={{ 
-            textAlign: 'center', 
-            fontWeight: 'bold', 
-            pt: { xs: 4, md: 5 },
-            mt: { xs: 2, md: 3 },
+          <DialogTitle sx={{
+            textAlign: 'center',
+            fontWeight: 'bold',
+            pt: { xs: 1, md: 2 },
+            pb: { xs: 1, md: 2 },
             color: 'black',
             borderBottom: '2px solid #6200ea',
-            mb: 2
+            mb: 1
           }}>
             男M自评详细报告
           </DialogTitle>
-          <DialogContent ref={reportRef} sx={{ 
-            px: 4, 
-            py: 3,
+          <DialogContent ref={reportRef} sx={{
+            px: { xs: 2, md: 4 },
+            py: { xs: 1, md: 2 },
             display: 'flex',
             flexDirection: 'column',
-            gap: 4,
+            gap: 2,
             '@media print': {
               overflow: 'visible',
               height: 'auto'
             }
           }}>
-            <Box ref={reportRef} sx={{ p: 3 }}>
-              <Typography variant="h4" gutterBottom align="center" sx={{ color: '#1E3D59', mb: 4 }}>
+            <Box ref={reportRef} sx={{ p: { xs: 1, md: 2 } }}>
+              <Typography variant="h4" gutterBottom align="center" sx={{ color: '#1E3D59', mb: { xs: 2, md: 3 } }}>
                 男M自评报告
               </Typography>
 
               {/* 雷达图部分 */}
-              <Box 
-                sx={{ 
+              <Box sx={{
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                  width: '100%',
-                  height: '400px',
-                  mb: 4 
-                }}
-              >
+                width: '100%',
+                mb: { xs: 1, md: 2 },
+                position: 'relative'
+              }}>
                 <RadarChart
-                  width={600} 
-                  height={400} 
+                  width={window.innerWidth < 768 ? Math.min(320, window.innerWidth - 60) : 500}
+                  height={window.innerWidth < 768 ? Math.min(250, window.innerWidth - 60) : 350}
                   data={getRadarData()}
                   style={{ margin: '0 auto' }}
                 >
@@ -1217,6 +1215,87 @@ function App() {
                   <PolarRadiusAxis angle={30} domain={[0, 6]} />
                   <Radar name="得分" dataKey="value" stroke="#1E3D59" fill="#1E3D59" fillOpacity={0.6} />
                 </RadarChart>
+              </Box>
+
+              {/* 用户提示信息 - 紧跟雷达图 */}
+              <Box sx={{
+                mb: { xs: 2, md: 3 },
+                textAlign: 'center',
+                p: { xs: 1.5, md: 2 },
+                backgroundColor: 'rgba(30, 61, 89, 0.15)',
+                borderRadius: 2,
+                border: '2px solid rgba(30, 61, 89, 0.4)',
+                mx: { xs: 1, md: 0 },
+                boxShadow: '0 2px 8px rgba(30, 61, 89, 0.2)'
+              }}>
+                <Typography variant="body1" sx={{
+                  color: '#1E3D59',
+                  fontWeight: 'bold',
+                  mb: 1,
+                  fontSize: { xs: '0.9rem', md: '1rem' }
+                }}>
+                  💡 温馨提示
+                </Typography>
+                <Typography variant="body2" sx={{
+                  color: 'text.primary',
+                  lineHeight: 1.6,
+                  fontSize: { xs: '0.85rem', md: '0.9rem' }
+                }}>
+                  向下滑动查看详细分析结果，或点击下方按钮直接保存报告为图片
+                </Typography>
+
+                {/* 移动端向下滚动提示箭头 */}
+                <Box sx={{
+                  display: { xs: 'flex', md: 'none' },
+                  justifyContent: 'center',
+                  mt: 1,
+                  animation: 'bounce 2s infinite',
+                  '@keyframes bounce': {
+                    '0%, 20%, 50%, 80%, 100%': {
+                      transform: 'translateY(0)'
+                    },
+                    '40%': {
+                      transform: 'translateY(-5px)'
+                    },
+                    '60%': {
+                      transform: 'translateY(-2px)'
+                    }
+                  }
+                }}>
+                  <Box sx={{
+                    width: 0,
+                    height: 0,
+                    borderLeft: '8px solid transparent',
+                    borderRight: '8px solid transparent',
+                    borderTop: '12px solid #1E3D59'
+                  }} />
+                </Box>
+              </Box>
+
+              {/* 移动端分隔线和提示 */}
+              <Box sx={{
+                display: { xs: 'block', md: 'none' },
+                mb: 4,
+                textAlign: 'center'
+              }}>
+                <Box sx={{
+                  height: '2px',
+                  background: 'linear-gradient(90deg, transparent, #1E3D59, transparent)',
+                  mb: 2
+                }} />
+                <Typography variant="h6" sx={{
+                  color: '#1E3D59',
+                  fontWeight: 'bold',
+                  mb: 1
+                }}>
+                  📊 详细分析报告
+                </Typography>
+                <Typography variant="body2" sx={{
+                  color: 'text.secondary',
+                  mb: 2
+                }}>
+                  以下是您的个性化测评详细结果
+                </Typography>
               </Box>
 
               {/* 按评分分组展示所有项目 */}
