@@ -323,14 +323,15 @@ function App() {
   }
 
   const getRatingColor = (rating) => {
+    // 亮蓝色到灰色渐变方案 - 男性风格
     switch(rating) {
-      case 'SSS': return '#1E3D59' // 深海蓝
-      case 'SS': return '#2C5530'  // 深森绿
-      case 'S': return '#37474F'   // 深蓝灰
-      case 'Q': return '#455A64'   // 蓝灰
-      case 'N': return '#546E7A'   // 中蓝灰
-      case 'W': return '#607D8B'   // 浅蓝灰
-      default: return '#90A4AE'    // 极浅蓝灰
+      case 'SSS': return '#2196F3' // 亮蓝色 - 最高级别
+      case 'SS': return '#42A5F5'  // 中亮蓝色 - 高级别
+      case 'S': return '#64B5F6'   // 浅蓝色 - 中高级别
+      case 'Q': return '#90A4AE'   // 蓝灰色 - 中等级别
+      case 'N': return '#78909C'   // 深蓝灰色 - 低级别
+      case 'W': return '#607D8B'   // 灰色 - 最低级别
+      default: return '#BDBDBD'    // 浅灰色 - 未选择
     }
   }
 
@@ -858,22 +859,22 @@ function App() {
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: { xs: 1, md: 2 } }}>
               <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>
-                <Box component="span" sx={{ fontWeight: 'bold', color: '#FF1493' }}>SSS</Box> = 非常喜欢
+                <Box component="span" sx={{ fontWeight: 'bold', color: '#2196F3' }}>SSS</Box> = 非常喜欢
               </Typography>
               <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>
-                <Box component="span" sx={{ fontWeight: 'bold', color: '#FF69B4' }}>SS</Box> = 喜欢
+                <Box component="span" sx={{ fontWeight: 'bold', color: '#42A5F5' }}>SS</Box> = 喜欢
               </Typography>
               <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>
-                <Box component="span" sx={{ fontWeight: 'bold', color: '#87CEEB' }}>S</Box> = 接受
+                <Box component="span" sx={{ fontWeight: 'bold', color: '#64B5F6' }}>S</Box> = 接受
               </Typography>
               <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>
-                <Box component="span" sx={{ fontWeight: 'bold', color: '#FFD700' }}>Q</Box> = 不喜欢但会做
+                <Box component="span" sx={{ fontWeight: 'bold', color: '#90A4AE' }}>Q</Box> = 不喜欢但会做
               </Typography>
               <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>
-                <Box component="span" sx={{ fontWeight: 'bold', color: '#FF4500' }}>N</Box> = 拒绝
+                <Box component="span" sx={{ fontWeight: 'bold', color: '#78909C' }}>N</Box> = 拒绝
               </Typography>
               <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>
-                <Box component="span" sx={{ fontWeight: 'bold', color: '#808080' }}>W</Box> = 未知
+                <Box component="span" sx={{ fontWeight: 'bold', color: '#607D8B' }}>W</Box> = 未知
               </Typography>
             </Box>
           </Paper>
