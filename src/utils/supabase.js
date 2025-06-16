@@ -940,4 +940,380 @@ export const testRecordsApi = {
   }
 };
 
+// 图库相关的数据库操作
+export const galleryApi = {
+  // 存储引用
+  storage: supabase.storage,
+
+  // 获取图片列表
+  async getImages(limit = 20, offset = 0) {
+    console.log('正在获取图片列表:', { limit, offset });
+    try {
+      const { data, error, count } = await supabase
+        .from('gallery_images')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        console.error('获取图片列表失败:', error);
+        throw error;
+      }
+
+      return {
+        data: data || [],
+        count: count || 0,
+        hasMore: (count || 0) > offset + limit
+      };
+    } catch (error) {
+      console.error('获取图片列表时发生错误:', error);
+      throw new Error('获取图片列表失败: ' + (error.message || '未知错误'));
+    }
+  },
+
+  // 上传图片
+  async uploadImage(file, userId, metadata = {}, onProgress) {
+    console.log('正在上传图片:', { userId, metadata });
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${userId}/${fileName}`;
+
+      // 上传文件到存储
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('gallery')
+        .upload(filePath, file, {
+          onUploadProgress: onProgress
+        });
+
+      if (uploadError) {
+        console.error('文件上传失败:', uploadError);
+        throw uploadError;
+      }
+
+      // 获取公共URL
+      const { data: urlData } = supabase.storage
+        .from('gallery')
+        .getPublicUrl(filePath);
+
+      // 保存图片信息到数据库
+      const { data: dbData, error: dbError } = await supabase
+        .from('gallery_images')
+        .insert([{
+          user_id: userId,
+          image_path: filePath,
+          image_url: urlData.publicUrl,
+          title: metadata.title || '',
+          description: metadata.description || '',
+          created_at: new Date().toISOString()
+        }])
+        .select();
+
+      if (dbError) {
+        console.error('保存图片信息失败:', dbError);
+        throw dbError;
+      }
+
+      console.log('图片上传成功:', dbData[0]);
+      return { success: true, data: dbData[0] };
+    } catch (error) {
+      console.error('上传图片时发生错误:', error);
+      throw new Error('上传图片失败: ' + (error.message || '未知错误'));
+    }
+  },
+
+  // 批量上传图片
+  async uploadImages(files, userId, metadata = {}, onProgress) {
+    console.log('正在批量上传图片:', { fileCount: files.length, userId });
+    const results = [];
+
+    for (let i = 0; i < files.length; i++) {
+      try {
+        const result = await this.uploadImage(files[i], userId, metadata, onProgress);
+        results.push(result);
+      } catch (error) {
+        results.push({ success: false, error: error.message });
+      }
+    }
+
+    return results;
+  },
+
+  // 删除图片
+  async deleteImage(imageId, userId, isAdmin = false) {
+    console.log('正在删除图片:', { imageId, userId, isAdmin });
+    try {
+      // 首先获取图片信息
+      const { data: imageData, error: fetchError } = await supabase
+        .from('gallery_images')
+        .select('*')
+        .eq('id', imageId)
+        .single();
+
+      if (fetchError) {
+        console.error('获取图片信息失败:', fetchError);
+        throw fetchError;
+      }
+
+      // 检查权限
+      if (!isAdmin && imageData.user_id !== userId) {
+        throw new Error('您没有权限删除此图片');
+      }
+
+      // 从存储中删除文件
+      if (imageData.image_path) {
+        const { error: storageError } = await supabase.storage
+          .from('gallery')
+          .remove([imageData.image_path]);
+
+        if (storageError) {
+          console.error('删除存储文件失败:', storageError);
+        }
+      }
+
+      // 从数据库中删除记录
+      const { error: deleteError } = await supabase
+        .from('gallery_images')
+        .delete()
+        .eq('id', imageId);
+
+      if (deleteError) {
+        console.error('删除数据库记录失败:', deleteError);
+        throw deleteError;
+      }
+
+      console.log('图片删除成功:', imageId);
+      return { success: true };
+    } catch (error) {
+      console.error('删除图片时发生错误:', error);
+      throw new Error('删除图片失败: ' + (error.message || '未知错误'));
+    }
+  },
+
+  // 批量删除图片
+  async deleteImages(imageIds, userId) {
+    console.log('正在批量删除图片:', { imageIds, userId });
+    let successful = 0;
+    let failed = 0;
+
+    for (const imageId of imageIds) {
+      try {
+        await this.deleteImage(imageId, userId, true); // 假设批量删除有管理员权限
+        successful++;
+      } catch (error) {
+        console.error(`删除图片 ${imageId} 失败:`, error);
+        failed++;
+      }
+    }
+
+    return { successful, failed };
+  },
+
+  // 更新图片信息
+  async updateImageInfo(imageId, userId, info, isAdmin = false) {
+    console.log('正在更新图片信息:', { imageId, userId, info, isAdmin });
+    try {
+      // 检查权限
+      if (!isAdmin) {
+        const { data: imageData, error: fetchError } = await supabase
+          .from('gallery_images')
+          .select('user_id')
+          .eq('id', imageId)
+          .single();
+
+        if (fetchError) throw fetchError;
+        if (imageData.user_id !== userId) {
+          throw new Error('您没有权限编辑此图片');
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('gallery_images')
+        .update(info)
+        .eq('id', imageId)
+        .select();
+
+      if (error) {
+        console.error('更新图片信息失败:', error);
+        throw error;
+      }
+
+      console.log('图片信息更新成功:', data[0]);
+      return { success: true, data: data[0] };
+    } catch (error) {
+      console.error('更新图片信息时发生错误:', error);
+      throw new Error('更新图片信息失败: ' + (error.message || '未知错误'));
+    }
+  },
+
+  // 获取图片投票状态
+  async getImageVoteStatus(imageId, userId) {
+    try {
+      const { data, error } = await supabase
+        .from('gallery_votes')
+        .select('is_like')
+        .eq('image_id', imageId)
+        .eq('user_id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 是没有找到记录的错误
+        console.error('获取投票状态失败:', error);
+        return null;
+      }
+
+      return data ? data.is_like : null;
+    } catch (error) {
+      console.error('获取投票状态时发生错误:', error);
+      return null;
+    }
+  },
+
+  // 更新图片点赞/点踩
+  async updateImageLikes(imageId, userId, isLike) {
+    console.log('正在更新图片投票:', { imageId, userId, isLike });
+    try {
+      // 检查是否已经投过票
+      const { data: existingVote, error: checkError } = await supabase
+        .from('gallery_votes')
+        .select('*')
+        .eq('image_id', imageId)
+        .eq('user_id', userId)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+
+      if (existingVote) {
+        // 如果已经投过相同的票，则取消投票
+        if (existingVote.is_like === isLike) {
+          const { error: deleteError } = await supabase
+            .from('gallery_votes')
+            .delete()
+            .eq('image_id', imageId)
+            .eq('user_id', userId);
+
+          if (deleteError) throw deleteError;
+          return { action: 'removed' };
+        } else {
+          // 如果投的是不同的票，则更新
+          const { error: updateError } = await supabase
+            .from('gallery_votes')
+            .update({ is_like: isLike })
+            .eq('image_id', imageId)
+            .eq('user_id', userId);
+
+          if (updateError) throw updateError;
+          return { action: 'updated' };
+        }
+      } else {
+        // 如果没有投过票，则添加新投票
+        const { error: insertError } = await supabase
+          .from('gallery_votes')
+          .insert([{
+            image_id: imageId,
+            user_id: userId,
+            is_like: isLike,
+            created_at: new Date().toISOString()
+          }]);
+
+        if (insertError) throw insertError;
+        return { action: 'added' };
+      }
+    } catch (error) {
+      console.error('更新图片投票时发生错误:', error);
+      throw new Error('更新投票失败: ' + (error.message || '未知错误'));
+    }
+  },
+
+  // 管理员更新投票数
+  async adminUpdateVotes(imageId, likes, dislikes) {
+    console.log('管理员正在更新投票数:', { imageId, likes, dislikes });
+    try {
+      // 删除现有投票
+      const { error: deleteError } = await supabase
+        .from('gallery_votes')
+        .delete()
+        .eq('image_id', imageId);
+
+      if (deleteError) throw deleteError;
+
+      // 添加新的点赞
+      const likeVotes = Array(likes).fill().map(() => ({
+        image_id: imageId,
+        user_id: 'admin',
+        is_like: true,
+        created_at: new Date().toISOString()
+      }));
+
+      // 添加新的点踩
+      const dislikeVotes = Array(dislikes).fill().map(() => ({
+        image_id: imageId,
+        user_id: 'admin',
+        is_like: false,
+        created_at: new Date().toISOString()
+      }));
+
+      const allVotes = [...likeVotes, ...dislikeVotes];
+
+      if (allVotes.length > 0) {
+        const { error: insertError } = await supabase
+          .from('gallery_votes')
+          .insert(allVotes);
+
+        if (insertError) throw insertError;
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('管理员更新投票数时发生错误:', error);
+      throw new Error('更新投票数失败: ' + (error.message || '未知错误'));
+    }
+  },
+
+  // 置顶图片
+  async pinImage(imageId) {
+    console.log('正在置顶图片:', imageId);
+    try {
+      const { data, error } = await supabase
+        .from('gallery_images')
+        .update({ is_pinned: true })
+        .eq('id', imageId)
+        .select();
+
+      if (error) {
+        console.error('置顶图片失败:', error);
+        throw error;
+      }
+
+      return { success: true, data: data[0] };
+    } catch (error) {
+      console.error('置顶图片时发生错误:', error);
+      throw new Error('置顶图片失败: ' + (error.message || '未知错误'));
+    }
+  },
+
+  // 审核图片
+  async approveImage(imageId, isApproved) {
+    console.log('正在审核图片:', { imageId, isApproved });
+    try {
+      const { data, error } = await supabase
+        .from('gallery_images')
+        .update({ is_approved: isApproved })
+        .eq('id', imageId)
+        .select();
+
+      if (error) {
+        console.error('审核图片失败:', error);
+        throw error;
+      }
+
+      return { success: true, data: data[0] };
+    } catch (error) {
+      console.error('审核图片时发生错误:', error);
+      throw new Error('审核图片失败: ' + (error.message || '未知错误'));
+    }
+  }
+};
+
 export default messagesApi;
