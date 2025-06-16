@@ -466,22 +466,89 @@ function SApp() {
 
         // 保存图片
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
         if (isMobile) {
           try {
-            // 尝试使用Web Share API
+            // 尝试使用Web Share API (支持直接分享到相册应用)
             if (navigator.share && navigator.canShare) {
               const file = new File([blob], 'S自评报告.png', { type: 'image/png' });
-              const shareData = { files: [file] };
-              
+              const shareData = {
+                title: 'S自评报告',
+                text: '我的个性化测评报告',
+                files: [file]
+              };
+
               if (navigator.canShare(shareData)) {
                 await navigator.share(shareData);
-                setSnackbarMessage('图片已准备好分享！');
+                setSnackbarMessage(isIOS ?
+                  '图片已准备好！可选择"存储到文件"或"保存到照片"' :
+                  '图片已准备好！可选择保存到相册或其他应用'
+                );
                 setSnackbarOpen(true);
                 return;
               }
             }
+
+            // 如果Web Share API不可用，尝试创建可长按保存的图片
+            const img = new Image();
+            img.src = URL.createObjectURL(blob);
+            img.style.cssText = `
+              position: fixed;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              max-width: 90vw;
+              max-height: 90vh;
+              z-index: 10000;
+              border: 3px solid #fff;
+              border-radius: 8px;
+              box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            `;
+
+            // 创建遮罩层
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: rgba(0,0,0,0.8);
+              z-index: 9999;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              flex-direction: column;
+            `;
+
+            // 添加说明文字
+            const instruction = document.createElement('div');
+            instruction.innerHTML = isIOS ?
+              '<p style="color: white; text-align: center; margin: 20px; font-size: 16px;">长按图片选择"存储图像"保存到相册<br/>点击空白处关闭</p>' :
+              '<p style="color: white; text-align: center; margin: 20px; font-size: 16px;">长按图片选择"保存图片"到相册<br/>点击空白处关闭</p>';
+
+            overlay.appendChild(instruction);
+            overlay.appendChild(img);
+            document.body.appendChild(overlay);
+
+            // 点击遮罩关闭
+            overlay.addEventListener('click', (e) => {
+              if (e.target === overlay || e.target === instruction) {
+                document.body.removeChild(overlay);
+                URL.revokeObjectURL(img.src);
+              }
+            });
+
+            setSnackbarMessage(isIOS ?
+              '图片已显示，长按选择"存储图像"保存到相册' :
+              '图片已显示，长按选择"保存图片"到相册'
+            );
+            setSnackbarOpen(true);
+            return;
+
           } catch (error) {
-            console.error('分享失败:', error);
+            console.error('移动端保存失败:', error);
           }
         }
 
