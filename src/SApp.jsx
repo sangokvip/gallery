@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react'
-import { Container, Typography, Paper, Grid, Box, Select, MenuItem, Button, Dialog, DialogTitle, DialogContent, DialogActions, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Snackbar, AppBar, Toolbar, Drawer, List, ListItem, ListItemIcon, ListItemText, createTheme, ThemeProvider } from '@mui/material'
+import React, { useState, useRef, useEffect } from 'react'
+import { Container, Typography, Paper, Grid, Box, Select, MenuItem, Button, Dialog, DialogTitle, DialogContent, DialogActions, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Snackbar, AppBar, Toolbar, Drawer, List, ListItem, ListItemIcon, ListItemText, createTheme, ThemeProvider, TextField, Chip } from '@mui/material'
 import './styles/pixel-theme.css'
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 import html2canvas from 'html2canvas'
@@ -13,9 +13,14 @@ import AutorenewIcon from '@mui/icons-material/Autorenew'
 import CloseIcon from '@mui/icons-material/Close'
 import MaleIcon from '@mui/icons-material/Male'
 import FemaleIcon from '@mui/icons-material/Female'
+import SaveIcon from '@mui/icons-material/Save'
+import HistoryIcon from '@mui/icons-material/History'
+import PersonIcon from '@mui/icons-material/Person'
 import Footer from './components/Footer'
 import MessageIcon from '@mui/icons-material/Message'
-import CollectionsIcon from '@mui/icons-material/Collections'
+import { testRecordsApi } from './utils/supabase'
+import { userManager, getUserId, getNickname, setNickname, getDisplayName } from './utils/userManager'
+import { runDatabaseDiagnostic } from './utils/databaseDiagnostic'
 
 // MENU_ITEMS定义移到函数组件内部
 
@@ -125,7 +130,184 @@ function SApp() {
   const [openHelp, setOpenHelp] = useState(false)
   const [openAbout, setOpenAbout] = useState(false)
   const [openGuide, setOpenGuide] = useState(false)
+  const [openHistory, setOpenHistory] = useState(false)
+  const [openUserSettings, setOpenUserSettings] = useState(false)
+  const [userNickname, setUserNickname] = useState(getNickname())
+  const [testRecords, setTestRecords] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [openDiagnostic, setOpenDiagnostic] = useState(false)
+  const [diagnosticReport, setDiagnosticReport] = useState(null)
+  const [showDiagnosticButton, setShowDiagnosticButton] = useState(false)
   const reportRef = useRef(null)
+
+  // 页面加载时初始化数据
+  useEffect(() => {
+    loadLatestTestRecord();
+    loadTestRecords();
+  }, []);
+
+  // 监听评分变化，标记为有未保存的更改
+  useEffect(() => {
+    const hasRatings = Object.keys(ratings).length > 0;
+    setHasUnsavedChanges(hasRatings);
+  }, [ratings]);
+
+  // 加载最新的测试记录
+  const loadLatestTestRecord = async () => {
+    try {
+      const userId = getUserId();
+      const latestRecord = await testRecordsApi.getLatestTestRecord(userId, 's');
+
+      if (latestRecord && latestRecord.ratings) {
+        setRatings(latestRecord.ratings);
+        setSnackbarMessage('已加载您的最新测试记录');
+        setSnackbarOpen(true);
+      }
+    } catch (error) {
+      console.error('加载最新测试记录失败:', error);
+    }
+  };
+
+  // 加载用户的所有测试记录
+  const loadTestRecords = async () => {
+    try {
+      setLoading(true);
+      const userId = getUserId();
+      const records = await testRecordsApi.getUserTestRecords(userId);
+      setTestRecords(records.filter(record => record.test_type === 's'));
+    } catch (error) {
+      console.error('加载测试记录失败:', error);
+      setSnackbarMessage('加载历史记录失败');
+      setSnackbarOpen(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 保存测试记录
+  const saveTestRecord = async () => {
+    try {
+      setLoading(true);
+      const userId = getUserId();
+      const nickname = getNickname();
+
+      // 生成报告数据
+      const reportData = {
+        radarData: getRadarData(),
+        groupedRatings: getGroupedRatings(),
+        totalItems: Object.keys(ratings).length,
+        completedItems: Object.values(ratings).filter(r => r !== '').length
+      };
+
+      await testRecordsApi.saveTestRecord({
+        userId,
+        nickname,
+        testType: 's',
+        ratings,
+        reportData
+      });
+
+      setHasUnsavedChanges(false);
+      setSnackbarMessage('测试记录保存成功！');
+      setSnackbarOpen(true);
+
+      // 重新加载记录列表
+      await loadTestRecords();
+    } catch (error) {
+      console.error('保存测试记录失败:', error);
+
+      if (error.message.includes('Could not find') || error.message.includes('column') || error.message.includes('table')) {
+        setSnackbarMessage('数据库配置有问题，请点击"数据库诊断"检查');
+      } else {
+        setSnackbarMessage('保存失败: ' + error.message);
+      }
+      setSnackbarOpen(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 运行数据库诊断
+  const runDiagnostic = async () => {
+    try {
+      setLoading(true);
+      setOpenDiagnostic(true);
+      const report = await runDatabaseDiagnostic();
+      setDiagnosticReport(report);
+    } catch (error) {
+      console.error('诊断失败:', error);
+      setSnackbarMessage('诊断失败: ' + error.message);
+      setSnackbarOpen(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 处理标题双击事件
+  const handleTitleDoubleClick = () => {
+    setShowDiagnosticButton(true);
+    setSnackbarMessage('数据库诊断功能已激活！');
+    setSnackbarOpen(true);
+  };
+
+  // 加载特定的测试记录
+  const loadTestRecord = async (recordId) => {
+    try {
+      setLoading(true);
+      const recordDetails = await testRecordsApi.getTestRecordDetails(recordId);
+
+      if (recordDetails && recordDetails.ratings) {
+        setRatings(recordDetails.ratings);
+        setOpenHistory(false);
+        setSnackbarMessage('测试记录加载成功');
+        setSnackbarOpen(true);
+      }
+    } catch (error) {
+      console.error('加载测试记录失败:', error);
+      setSnackbarMessage('加载记录失败: ' + error.message);
+      setSnackbarOpen(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 删除测试记录
+  const deleteTestRecord = async (recordId) => {
+    try {
+      setLoading(true);
+      const userId = getUserId();
+      await testRecordsApi.deleteTestRecord(recordId, userId);
+
+      setSnackbarMessage('记录删除成功');
+      setSnackbarOpen(true);
+
+      // 重新加载记录列表
+      await loadTestRecords();
+    } catch (error) {
+      console.error('删除测试记录失败:', error);
+      setSnackbarMessage('删除失败: ' + error.message);
+      setSnackbarOpen(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 更新用户昵称
+  const updateUserNickname = () => {
+    const newNickname = setNickname(userNickname);
+    setSnackbarMessage('昵称更新成功: ' + newNickname);
+    setSnackbarOpen(true);
+    setOpenUserSettings(false);
+  };
+
+  // 清空当前测试
+  const clearCurrentTest = () => {
+    setRatings({});
+    setHasUnsavedChanges(false);
+    setSnackbarMessage('当前测试已清空');
+    setSnackbarOpen(true);
+  };
 
   // 将MENU_ITEMS移到函数组件内部，这样它可以访问组件的状态设置函数
   const MENU_ITEMS = [
@@ -207,9 +389,6 @@ function SApp() {
   const handleExportImage = async () => {
     if (reportRef.current) {
       try {
-        setSnackbarMessage('正在生成图片，请稍候...');
-        setSnackbarOpen(true);
-        
         // 创建一个新的容器元素，用于生成图片
         const container = document.createElement('div');
         container.style.position = 'absolute';
@@ -281,130 +460,44 @@ function SApp() {
 
         // 清理临时元素
         document.body.removeChild(container);
-        
-        // 检测设备类型
-        const isAndroid = /android/i.test(navigator.userAgent);
-        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-        const isMobile = isAndroid || isIOS;
-        
-        // 准备文件数据
-        const imageQuality = 0.95; // 高质量但稍微减小文件大小
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', imageQuality));
-        const url = URL.createObjectURL(blob);
-        const filename = 'S自评报告.png';
 
-        try {
-          // 移动设备优先尝试使用分享API
-          if (isMobile && navigator.share && navigator.canShare) {
-            try {
-              const file = new File([blob], filename, { type: 'image/png' });
+        // 将Canvas转换为Blob
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
+
+        // 保存图片
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+          try {
+            // 尝试使用Web Share API
+            if (navigator.share && navigator.canShare) {
+              const file = new File([blob], 'S自评报告.png', { type: 'image/png' });
               const shareData = { files: [file] };
               
               if (navigator.canShare(shareData)) {
                 await navigator.share(shareData);
-                setSnackbarMessage('分享成功！');
-                setSnackbarOpen(true);
-                URL.revokeObjectURL(url);
-                return;
-              }
-            } catch (shareError) {
-              console.warn('分享API失败，尝试备选方案:', shareError);
-            }
-          }
-          
-          // 针对安卓设备的优化方法
-          if (isAndroid) {
-            try {
-              // 方法1: 使用download属性
-              const link = document.createElement('a');
-              link.href = url;
-              link.download = filename;
-              link.target = '_blank';
-              link.style.display = 'none';
-              document.body.appendChild(link);
-              link.click();
-              setTimeout(() => {
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-              }, 1000);
-              
-              setSnackbarMessage('报告已导出！请检查您的下载文件夹');
-              setSnackbarOpen(true);
-              return;
-            } catch (androidError) {
-              console.warn('安卓下载方法1失败:', androidError);
-            }
-            
-            try {
-              // 方法2: 打开新窗口展示图片
-              const newTab = window.open();
-              if (newTab) {
-                newTab.document.write(`
-                  <html>
-                    <head>
-                      <title>S自评报告</title>
-                      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                      <style>body{margin:0;display:flex;justify-content:center;align-items:center;flex-direction:column;padding:20px;}</style>
-                    </head>
-                    <body>
-                      <h2>长按图片保存</h2>
-                      <img src="${url}" style="max-width:100%;" alt="S自评报告">
-                    </body>
-                  </html>
-                `);
-                newTab.document.close();
-                setSnackbarMessage('请在新页面长按图片保存');
+                setSnackbarMessage('图片已准备好分享！');
                 setSnackbarOpen(true);
                 return;
               }
-            } catch (windowError) {
-              console.warn('安卓下载方法2失败:', windowError);
             }
-          }
-          
-          // 通用下载方法
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = filename;
-          link.click();
-          
-          setTimeout(() => {
-            URL.revokeObjectURL(url);
-          }, 1000);
-          
-          setSnackbarMessage('报告已保存为高清图片！');
-          setSnackbarOpen(true);
-        } catch (downloadError) {
-          console.error('下载过程出错:', downloadError);
-          
-          // 最后的备选方案：直接展示图片让用户手动保存
-          const imageUrl = canvas.toDataURL('image/png', imageQuality);
-          const newWindow = window.open();
-          if (newWindow) {
-            newWindow.document.write(`
-              <html>
-                <head>
-                  <title>S自评报告</title>
-                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                  <style>body{margin:0;padding:20px;text-align:center;}</style>
-                </head>
-                <body>
-                  <h2>请长按或右键保存图片</h2>
-                  <img src="${imageUrl}" style="max-width:100%;" alt="S自评报告">
-                </body>
-              </html>
-            `);
-            newWindow.document.close();
-            setSnackbarMessage('请在新页面保存图片');
-            setSnackbarOpen(true);
-          } else {
-            setSnackbarMessage('无法自动下载，请尝试使用截图功能');
-            setSnackbarOpen(true);
+          } catch (error) {
+            console.error('分享失败:', error);
           }
         }
+
+        // 默认下载方法
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'S自评报告.png';
+        link.click();
+        URL.revokeObjectURL(url);
+        setSnackbarMessage('报告已保存为高清图片！');
+        setSnackbarOpen(true);
+
       } catch (error) {
         console.error('导出图片错误:', error);
-        setSnackbarMessage('导出图片失败，请尝试使用截图功能');
+        setSnackbarMessage('导出图片失败，请重试');
         setSnackbarOpen(true);
       }
     }
@@ -536,17 +629,39 @@ function SApp() {
               </Typography>
             </Box>
                 
-            <Box sx={{ 
-              display: { xs: 'none', md: 'flex' }, 
-              gap: 2,
+            <Box sx={{
+              display: { xs: 'none', md: 'flex' },
+              gap: 1,
               flex: '1 1 auto',
-              justifyContent: 'flex-end'
-            }}>              
+              justifyContent: 'flex-end',
+              '& .MuiButton-root': {
+                fontSize: '0.7rem',
+                minWidth: 'auto',
+                px: 1.5,
+                py: 0.5,
+                border: '1px solid rgba(255,255,255,0.3)',
+                '&:hover': {
+                  backgroundColor: 'rgba(255,255,255,0.1)'
+                }
+              }
+            }}>
               <Button color="inherit" startIcon={<HomeIcon />} href="/index.html">首页</Button>
-              <Button color="inherit" startIcon={<MaleIcon />} href="/male.html">男M版</Button>
-              <Button color="inherit" startIcon={<FemaleIcon />} href="/female.html">女M版</Button>
-              <Button color="inherit" startIcon={<CollectionsIcon />} href="/gallery.html">图库</Button>
-              <Button color="inherit" startIcon={<MessageIcon />} href="/message.html">留言板</Button>
+              <Button color="inherit" startIcon={<MaleIcon />} href="/male.html">男版</Button>
+              <Button color="inherit" startIcon={<FemaleIcon />} href="/female.html">女版</Button>
+              <Button color="inherit" startIcon={<MessageIcon />} href="/message.html">留言</Button>
+              <Button
+                color="inherit"
+                startIcon={<PersonIcon />}
+                onClick={() => setOpenUserSettings(true)}
+                sx={{
+                  maxWidth: '100px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {getNickname().length > 6 ? getNickname().substring(0, 6) + '...' : getNickname()}
+              </Button>
             </Box>
 
             <IconButton
@@ -568,24 +683,24 @@ function SApp() {
         <Box sx={{ width: 250, pt: 2 }}>
           <List>
             <ListItem button component="a" href="/index.html" onClick={() => setMobileMenuOpen(false)}>
-              <ListItemIcon><HomeIcon /></ListItemIcon>
-              <ListItemText primary="首页" />
+              <ListItemIcon><HomeIcon sx={{ color: '#ff0000' }} /></ListItemIcon>
+              <ListItemText primary="首页" sx={{ color: '#ff0000' }} />
             </ListItem>
             <ListItem button component="a" href="/male.html" onClick={() => setMobileMenuOpen(false)}>
-              <ListItemIcon><MaleIcon /></ListItemIcon>
-              <ListItemText primary="男生版" />
+              <ListItemIcon><MaleIcon sx={{ color: '#ff0000' }} /></ListItemIcon>
+              <ListItemText primary="男生版" sx={{ color: '#ff0000' }} />
             </ListItem>
             <ListItem button component="a" href="/female.html" onClick={() => setMobileMenuOpen(false)}>
-              <ListItemIcon><FemaleIcon /></ListItemIcon>
-              <ListItemText primary="女生版" />
-            </ListItem>
-            <ListItem button component="a" href="/gallery.html" onClick={() => setMobileMenuOpen(false)}>
-              <ListItemIcon><CollectionsIcon /></ListItemIcon>
-              <ListItemText primary="图库" />
+              <ListItemIcon><FemaleIcon sx={{ color: '#ff0000' }} /></ListItemIcon>
+              <ListItemText primary="女生版" sx={{ color: '#ff0000' }} />
             </ListItem>
             <ListItem button component="a" href="/message.html" onClick={() => setMobileMenuOpen(false)}>
-              <ListItemIcon><MessageIcon /></ListItemIcon>
-              <ListItemText primary="留言板" />
+              <ListItemIcon><MessageIcon sx={{ color: '#ff0000' }} /></ListItemIcon>
+              <ListItemText primary="留言板" sx={{ color: '#ff0000' }} />
+            </ListItem>
+            <ListItem button onClick={() => { setOpenUserSettings(true); setMobileMenuOpen(false); }}>
+              <ListItemIcon><PersonIcon sx={{ color: '#ff0000' }} /></ListItemIcon>
+              <ListItemText primary="用户设置" sx={{ color: '#ff0000' }} />
             </ListItem>
           </List>
         </Box>
@@ -604,7 +719,21 @@ function SApp() {
         }
       }}>
         <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Typography variant="h3" component="h1"  sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+          <Typography
+            variant="h3"
+            component="h1"
+            sx={{
+              fontWeight: 'bold',
+              color: 'primary.main',
+              cursor: 'pointer',
+              userSelect: 'none',
+              '&:hover': {
+                opacity: 0.8
+              }
+            }}
+            onDoubleClick={handleTitleDoubleClick}
+            title="双击激活数据库诊断功能"
+          >
             How 'S' I Could Be?
           </Typography>
 
@@ -636,29 +765,105 @@ function SApp() {
           </Box>
         </Paper>
 
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, mb: 2 }}>
-          <Button
-            variant="contained"
-            color="primary"
-            size="large"
-            onClick={() => {
-              const newRatings = { ...ratings }
-              Object.entries(CATEGORIES).forEach(([category, items]) => {
-                items.forEach(item => {
-                  const randomIndex = Math.floor(Math.random() * RATING_OPTIONS.length)
-                  newRatings[`${category}-${item}`] = RATING_OPTIONS[randomIndex]
+        <Box sx={{ mt: 2, mb: 2, display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
+          {/* 状态指示器 */}
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
+            <Chip
+              label={`已完成: ${Object.values(ratings).filter(r => r !== '').length}/${Object.keys(CATEGORIES).reduce((sum, cat) => sum + CATEGORIES[cat].length, 0)}`}
+              color="primary"
+              variant="outlined"
+            />
+            {hasUnsavedChanges && (
+              <Chip
+                label="有未保存的更改"
+                color="warning"
+                variant="filled"
+                icon={<SaveIcon />}
+              />
+            )}
+            <Chip
+              label={`用户: ${getDisplayName()}`}
+              color="secondary"
+              variant="outlined"
+              icon={<PersonIcon />}
+            />
+          </Box>
+
+          {/* 操作按钮 */}
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <Button
+              variant="contained"
+              size="large"
+              startIcon={<SaveIcon />}
+              disabled={loading || Object.keys(ratings).length === 0}
+              className="pixel-button-red"
+              onClick={saveTestRecord}
+              sx={{ minWidth: 150 }}
+            >
+              {loading ? '保存中...' : '保存测试'}
+            </Button>
+
+            <Button
+              variant="outlined"
+              size="large"
+              startIcon={<HistoryIcon />}
+              onClick={() => setOpenHistory(true)}
+              className="pixel-button-red"
+              sx={{ minWidth: 150 }}
+            >
+              查看记录
+            </Button>
+
+            <Button
+              variant="outlined"
+              color="primary"
+              size="large"
+              onClick={() => {
+                const newRatings = { ...ratings }
+                Object.entries(CATEGORIES).forEach(([category, items]) => {
+                  items.forEach(item => {
+                    const randomIndex = Math.floor(Math.random() * RATING_OPTIONS.length)
+                    newRatings[`${category}-${item}`] = RATING_OPTIONS[randomIndex]
+                  })
                 })
-              })
-              setRatings(newRatings)
-              setSnackbarMessage('已完成随机选择！')
-              setSnackbarOpen(true)
-            }}
-            className="pixel-button-red"
-            startIcon={<AutorenewIcon />}
-            sx={{ minWidth: 150 }}
-          >
-            随机选择
-          </Button>
+                setRatings(newRatings)
+                setSnackbarMessage('已完成随机选择！')
+                setSnackbarOpen(true)
+              }}
+              className="pixel-button-red"
+              startIcon={<AutorenewIcon />}
+              sx={{ minWidth: 150 }}
+            >
+              随机选择
+            </Button>
+
+            <Button
+              variant="outlined"
+              size="large"
+              startIcon={<CloseIcon />}
+              color="error"
+              className="pixel-button-red"
+              onClick={clearCurrentTest}
+              sx={{ minWidth: 150 }}
+            >
+              清空测试
+            </Button>
+
+            {showDiagnosticButton && (
+              <Button
+                variant="outlined"
+                size="large"
+                startIcon={<InfoIcon />}
+                color="info"
+                className="pixel-button-red"
+                onClick={runDiagnostic}
+                disabled={loading}
+                sx={{ minWidth: 150 }}
+              >
+                数据库诊断
+              </Button>
+            )}
+          </Box>
         </Box>
         
         {Object.entries(CATEGORIES).map(([category, items]) => (
@@ -857,69 +1062,19 @@ function SApp() {
           }
         }}>
           <Box ref={reportRef} sx={{ p: 3 }}>
-            <Typography variant="h4" gutterBottom align="center" sx={{ color: 'red', mb: 3 }}>
+            <Typography variant="h4" gutterBottom align="center" sx={{ color: 'red', mb: 4 }}>
               S型人格测试报告
             </Typography>
 
-            {/* 雷达图部分 - 修改尺寸和布局 */}
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              mb: 3,
-              maxWidth: '100%',
-              height: { xs: '300px', sm: '350px' },
-              '& .recharts-wrapper': {
-                maxWidth: '100%',
-                height: '100% !important'
-              }
-            }}>
-              <RadarChart 
-                width={400} 
-                height={300} 
-                data={getRadarData()}
-                style={{
-                  margin: '0 auto'
-                }}
-              >
+            {/* 雷达图保留 */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
+              <RadarChart width={600} height={400} data={getRadarData()}>
                 <PolarGrid />
-                <PolarAngleAxis 
-                  dataKey="category" 
-                  tick={{ 
-                    fill: '#ff0000',
-                    fontSize: 12
-                  }}
-                />
-                <PolarRadiusAxis 
-                  angle={30} 
-                  domain={[0, 6]} 
-                  tick={{ 
-                    fill: '#666666',
-                    fontSize: 11
-                  }}
-                />
-                <Radar 
-                  name="得分" 
-                  dataKey="value" 
-                  stroke="#ff0000" 
-                  fill="#ff0000" 
-                  fillOpacity={0.6} 
-                />
+                <PolarAngleAxis dataKey="category" />
+                <PolarRadiusAxis angle={30} domain={[0, 6]} />
+                <Radar name="得分" dataKey="value" stroke="#ff0000" fill="#ff0000" fillOpacity={0.6} />
               </RadarChart>
             </Box>
-
-            {/* 添加一个简短的说明文字 */}
-            <Typography 
-              variant="body2" 
-              align="center" 
-              sx={{ 
-                mb: 4, 
-                color: 'text.secondary',
-                fontSize: '0.9rem',
-                px: 2
-              }}
-            >
-              ↑ 上方雷达图展示了各个类别的平均得分，下方是详细的评分分类 ↓
-            </Typography>
 
             {/* 按评分分组展示所有项目 */}
             {Object.entries(getGroupedRatings()).map(([rating, items]) => {
@@ -1117,6 +1272,245 @@ function SApp() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenGuide(false)} color="primary">关闭</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 历史记录对话框 */}
+      <Dialog
+        open={openHistory}
+        onClose={() => setOpenHistory(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            minHeight: { xs: '80vh', md: '60vh' },
+            maxHeight: { xs: '90vh', md: '80vh' }
+          }
+        }}
+      >
+        <DialogTitle sx={{
+          textAlign: 'center',
+          fontWeight: 'bold',
+          borderBottom: '2px dashed #ff0000',
+          mb: 2
+        }}>
+          测试历史记录
+        </DialogTitle>
+        <DialogContent sx={{ px: 3, py: 2 }}>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <Typography>加载中...</Typography>
+            </Box>
+          ) : testRecords.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography variant="h6" color="text.secondary">
+                暂无测试记录
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                完成测试并保存后，记录将显示在这里
+              </Typography>
+            </Box>
+          ) : (
+            <Grid container spacing={2}>
+              {testRecords.map((record, index) => (
+                <Grid item xs={12} sm={6} md={4} key={record.id}>
+                  <Paper elevation={2} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <Typography variant="h6" sx={{ mb: 1, color: '#ff0000' }}>
+                      测试 #{testRecords.length - index}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                      时间: {new Date(record.created_at).toLocaleString('zh-CN')}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      完成度: {record.report_data?.completedItems || 0}/{record.report_data?.totalItems || 0}
+                    </Typography>
+                    <Box sx={{ mt: 'auto', display: 'flex', gap: 1 }}>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() => loadTestRecord(record.id)}
+                        disabled={loading}
+                        sx={{ flex: 1 }}
+                      >
+                        加载
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        onClick={() => deleteTestRecord(record.id)}
+                        disabled={loading}
+                      >
+                        删除
+                      </Button>
+                    </Box>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', pb: 2 }}>
+          <Button onClick={() => setOpenHistory(false)}>
+            关闭
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 用户设置对话框 */}
+      <Dialog
+        open={openUserSettings}
+        onClose={() => setOpenUserSettings(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{
+          textAlign: 'center',
+          fontWeight: 'bold',
+          borderBottom: '2px dashed #ff0000',
+          mb: 2
+        }}>
+          用户设置
+        </DialogTitle>
+        <DialogContent sx={{ px: 3, py: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <TextField
+              label="用户昵称"
+              value={userNickname}
+              onChange={(e) => setUserNickname(e.target.value)}
+              fullWidth
+              helperText="设置一个好记的昵称，方便识别您的测试记录"
+              variant="outlined"
+            />
+
+            <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
+                用户信息
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                用户ID: {getUserId()}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                当前昵称: {getNickname()}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                测试记录数: {testRecords.length}
+              </Typography>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', pb: 2, gap: 2 }}>
+          <Button
+            onClick={updateUserNickname}
+            variant="contained"
+          >
+            保存昵称
+          </Button>
+          <Button
+            onClick={() => setOpenUserSettings(false)}
+          >
+            取消
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 数据库诊断对话框 */}
+      <Dialog
+        open={openDiagnostic}
+        onClose={() => setOpenDiagnostic(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{
+          textAlign: 'center',
+          fontWeight: 'bold',
+          borderBottom: '2px dashed #ff0000',
+          mb: 2
+        }}>
+          数据库诊断报告
+        </DialogTitle>
+        <DialogContent sx={{ px: 3, py: 2 }}>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <Typography>正在诊断数据库...</Typography>
+            </Box>
+          ) : diagnosticReport ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* 诊断摘要 */}
+              <Paper elevation={1} sx={{ p: 2, bgcolor: 'grey.50' }}>
+                <Typography variant="h6" sx={{ mb: 2, color: '#ff0000' }}>
+                  诊断摘要
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={6} sm={3}>
+                    <Typography variant="body2" color="text.secondary">数据库连接</Typography>
+                    <Typography variant="body1">{diagnosticReport.summary.connection}</Typography>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Typography variant="body2" color="text.secondary">数据表</Typography>
+                    <Typography variant="body1">{diagnosticReport.summary.tablesCount}/{diagnosticReport.summary.totalTables}</Typography>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Typography variant="body2" color="text.secondary">错误数量</Typography>
+                    <Typography variant="body1" color={diagnosticReport.summary.errorsCount > 0 ? 'error' : 'success.main'}>
+                      {diagnosticReport.summary.errorsCount}
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </Paper>
+
+              {/* 错误详情 */}
+              {diagnosticReport.details.errors.length > 0 && (
+                <Paper elevation={1} sx={{ p: 2, bgcolor: '#ffebee' }}>
+                  <Typography variant="h6" sx={{ mb: 2, color: 'error.main' }}>
+                    发现的问题
+                  </Typography>
+                  {diagnosticReport.details.errors.map((error, index) => (
+                    <Typography key={index} variant="body2" sx={{ mb: 1, color: 'error.dark' }}>
+                      • {error}
+                    </Typography>
+                  ))}
+                </Paper>
+              )}
+
+              {/* 修复建议 */}
+              <Paper elevation={1} sx={{ p: 2, bgcolor: '#e8f5e8' }}>
+                <Typography variant="h6" sx={{ mb: 2, color: 'success.main' }}>
+                  修复建议
+                </Typography>
+                {diagnosticReport.recommendations.map((recommendation, index) => (
+                  <Typography key={index} variant="body2" sx={{ mb: 1 }}>
+                    {index + 1}. {recommendation}
+                  </Typography>
+                ))}
+              </Paper>
+            </Box>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography variant="h6" color="text.secondary">
+                点击"开始诊断"检查数据库状态
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', pb: 2, gap: 2 }}>
+          {!diagnosticReport && (
+            <Button
+              onClick={runDiagnostic}
+              variant="contained"
+              disabled={loading}
+            >
+              {loading ? '诊断中...' : '开始诊断'}
+            </Button>
+          )}
+          <Button
+            onClick={() => {
+              setOpenDiagnostic(false);
+              setDiagnosticReport(null);
+            }}
+          >
+            关闭
+          </Button>
         </DialogActions>
       </Dialog>
     </ThemeProvider>

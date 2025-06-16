@@ -15,557 +15,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
 console.log('Initializing Supabase client with URL:', supabaseUrl);
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// 图片上传相关的API操作
-export const galleryApi = {
-  // 获取所有图片
-  async getImages(limit = 20, offset = 0) {
-    console.log('正在获取图片列表...', { limit, offset });
-    try {
-      const { data, error, count } = await supabase
-        .from('report_images')
-        .select('*', { count: 'exact' })
-        .order('is_pinned', { ascending: false })
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
-
-      if (error) {
-        console.error('获取图片列表失败:', error);
-        throw error;
-      }
-
-      // 确保返回的数据是有效的
-      if (!data) {
-        console.log('没有找到图片数据');
-        return { data: [], count: 0, hasMore: false };
-      }
-
-      // 为每个图片添加公共URL（如果没有的话）
-      const processedData = data.map(image => {
-        if (!image.image_url) {
-          const { data: { publicUrl } } = supabase.storage
-            .from('gallery')
-            .getPublicUrl(image.image_path);
-          return { ...image, image_url: publicUrl };
-        }
-        return image;
-      });
-
-      console.log('成功获取图片列表:', {
-        totalCount: count,
-        returnedCount: processedData.length,
-        offset,
-        limit,
-        hasMore: offset + limit < count
-      });
-
-      return { 
-        data: processedData, 
-        count,
-        hasMore: offset + limit < count
-      };
-    } catch (error) {
-      console.error('获取图片列表时发生错误:', error);
-      throw new Error('获取图片列表失败: ' + (error.message || '未知错误'));
-    }
-  },
-
-  // 上传图片到Storage
-  async uploadImage(file, userId, metadata = {}, onProgress) {
-    if (!file) {
-      throw new Error('请选择要上传的图片');
-    }
-
-    // 检查文件类型
-    if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
-      throw new Error('仅支持JPG、PNG、GIF和WebP格式的图片');
-    }
-
-    // 检查文件大小（最大5MB）
-    if (file.size > 5 * 1024 * 1024) {
-      throw new Error('图片大小不能超过5MB');
-    }
-
-    try {
-      console.log('开始上传图片:', {
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-        userId: userId
-      });
-
-      // 生成文件路径和唯一文件名
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.${fileExt}`;
-      const filePath = `reports/${fileName}`;
-
-      console.log('准备上传文件:', {
-        filePath,
-        fileType: file.type,
-        bucketName: 'gallery'
-      });
-
-      // 直接上传文件
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('gallery')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          contentType: file.type,
-          upsert: false
-        });
-
-      if (uploadError) {
-        console.error('上传文件失败:', uploadError);
-        throw new Error('上传文件失败: ' + uploadError.message);
-      }
-
-      console.log('文件上传成功:', uploadData);
-
-      // 获取公共URL
-      const { data: { publicUrl }, error: urlError } = supabase.storage
-        .from('gallery')
-        .getPublicUrl(filePath);
-
-      if (urlError) {
-        console.error('获取公共URL失败:', urlError);
-        throw new Error('获取公共URL失败');
-      }
-
-      console.log('获取到公共URL:', publicUrl);
-
-      // 在数据库中记录图片信息
-      console.log('准备保存图片信息到数据库:', {
-        userId,
-        filePath,
-        publicUrl,
-        metadata
-      });
-
-      const { data: imageData, error: dbError } = await supabase
-        .from('report_images')
-        .insert([
-          {
-            user_id: userId,
-            image_path: filePath,
-            image_url: publicUrl,
-            title: metadata.title || file.name,
-            description: metadata.description || '',
-            is_approved: false
-          }
-        ])
-        .select()
-        .single();
-
-      if (dbError) {
-        console.error('保存图片信息失败:', dbError);
-        // 尝试删除已上传的文件
-        await supabase.storage.from('gallery').remove([filePath]);
-        throw new Error('保存图片信息失败: ' + dbError.message);
-      }
-
-      console.log('图片信息保存成功:', imageData);
-
-      if (onProgress) {
-        onProgress(100);
-      }
-
-      return imageData;
-    } catch (error) {
-      console.error('上传图片过程中发生错误:', error);
-      throw new Error('上传图片失败: ' + (error.message || '未知错误'));
-    }
-  },
-
-  // 批量上传图片（仅供管理员使用）
-  async uploadImages(files, userId, metadataArray = [], onProgress) {
-    if (!Array.isArray(files) || files.length === 0) {
-      throw new Error('请选择要上传的图片');
-    }
-
-    const results = [];
-    const total = files.length;
-
-    try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const metadata = metadataArray[i] || {};
-
-        try {
-          console.log(`开始上传第 ${i + 1}/${total} 张图片:`, {
-            fileName: file.name,
-            metadata
-          });
-
-          const result = await this.uploadImage(file, userId, metadata, (progress) => {
-            // 传递当前文件的索引和进度
-            if (onProgress) {
-              onProgress(progress, i);
-            }
-          });
-
-          results.push({ success: true, data: result });
-          console.log(`第 ${i + 1} 张图片上传成功`);
-        } catch (error) {
-          console.error(`第 ${i + 1} 张图片上传失败:`, error);
-          results.push({ success: false, error: error.message });
-          
-          // 即使失败也要通知进度更新
-          if (onProgress) {
-            onProgress(100, i);
-          }
-        }
-      }
-
-      return results;
-    } catch (error) {
-      console.error('批量上传过程中发生错误:', error);
-      throw new Error('批量上传失败: ' + (error.message || '未知错误'));
-    }
-  },
-
-  // 删除图片
-  async deleteImage(imageId, userId, isAdmin = false) {
-    console.log('开始删除图片:', { imageId, userId, isAdmin });
-    
-    try {
-      // 1. 先获取图片信息
-      const { data: image, error: fetchError } = await supabase
-        .from('report_images')
-        .select('*')
-        .eq('id', imageId)
-        .single();
-
-      if (fetchError) {
-        console.error('获取图片信息失败:', fetchError);
-        throw new Error('获取图片信息失败: ' + fetchError.message);
-      }
-
-      if (!image) {
-        throw new Error('图片不存在');
-      }
-
-      console.log('获取到图片信息:', image);
-
-      // 2. 删除存储中的文件
-      if (image.image_path) {
-        console.log('正在删除存储文件:', image.image_path);
-      const { error: storageError } = await supabase.storage
-        .from('gallery')
-        .remove([image.image_path]);
-
-      if (storageError) {
-          console.error('删除存储文件失败:', storageError);
-          // 继续执行数据库记录的删除
-        }
-      }
-
-      // 3. 删除数据库记录
-      console.log('正在删除数据库记录');
-      const { error: deleteError } = await supabase
-        .from('report_images')
-        .delete()
-        .eq('id', imageId);
-
-      if (deleteError) {
-        console.error('删除数据库记录失败:', deleteError);
-        
-        // 如果是权限错误，尝试使用 RPC
-        if (deleteError.message.includes('permission') || deleteError.code === '42501') {
-          console.log('尝试使用 RPC 删除...');
-          const { error: rpcError } = await supabase.rpc('delete_report_image', {
-            p_image_id: imageId
-          });
-          
-          if (rpcError) {
-            console.error('RPC 删除失败:', rpcError);
-            throw new Error('删除失败: ' + rpcError.message);
-          }
-        } else {
-          throw new Error('删除失败: ' + deleteError.message);
-        }
-      }
-
-      // 4. 验证删除结果
-      const { data: checkData } = await supabase
-        .from('report_images')
-        .select('id')
-        .eq('id', imageId)
-        .maybeSingle();
-
-      if (checkData) {
-        console.error('警告：记录仍然存在！尝试强制删除');
-        
-        // 尝试使用原始 SQL 删除
-        const { error: sqlError } = await supabase.rpc('force_delete_image', {
-          image_id: imageId
-        });
-
-        if (sqlError) {
-          console.error('强制删除失败:', sqlError);
-          throw new Error('无法删除记录，请联系管理员');
-        }
-      }
-
-      console.log('删除操作完成');
-      return true;
-    } catch (error) {
-      console.error('删除图片时发生错误:', error);
-      throw error;
-    }
-  },
-
-  // 更新图片信息
-  async updateImageInfo(imageId, userId, updates, isAdmin = false) {
-    try {
-      // 检查图片是否存在并验证权限
-      const { data: image, error: fetchError } = await supabase
-        .from('report_images')
-        .select('*')
-        .eq('id', imageId)
-        .single();
-
-      if (fetchError) {
-        console.error('获取图片信息失败:', fetchError);
-        throw new Error('获取图片信息失败');
-      }
-
-      if (!isAdmin && image.user_id !== userId) {
-        throw new Error('您没有权限更新此图片信息');
-      }
-
-      // 更新图片信息
-      const { data, error } = await supabase
-        .from('report_images')
-        .update(updates)
-        .eq('id', imageId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('更新图片信息失败:', error);
-        throw new Error('更新图片信息失败: ' + error.message);
-      }
-
-      return data;
-    } catch (error) {
-      console.error('更新图片信息时发生错误:', error);
-      throw new Error('更新图片信息失败: ' + (error.message || '未知错误'));
-    }
-  },
-  
-  // 审核图片（管理员操作）
-  async approveImage(imageId, isApproved = true) {
-    try {
-      const { data, error } = await supabase
-        .from('report_images')
-        .update({ is_approved: isApproved })
-        .eq('id', imageId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('审核图片失败:', error);
-        throw new Error('审核图片失败: ' + error.message);
-      }
-
-      return data;
-    } catch (error) {
-      console.error('审核图片时发生错误:', error);
-      throw new Error('审核图片失败: ' + (error.message || '未知错误'));
-    }
-  },
-
-  // 批量删除图片（仅供管理员使用）
-  async deleteImages(imageIds, userId) {
-    console.log('开始批量删除图片:', { imageIds, userId });
-    
-    let successful = 0;
-    let failed = 0;
-    
-    try {
-      const results = await Promise.allSettled(
-        imageIds.map(async (imageId) => {
-          try {
-            await this.deleteImage(imageId, userId, true); // 使用 this.deleteImage 而不是 deleteImage
-            return { success: true, imageId };
-          } catch (error) {
-            console.error(`删除图片 ${imageId} 失败:`, error);
-            return { success: false, imageId, error: error.message };
-          }
-        })
-      );
-      
-      successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
-      failed = results.length - successful;
-      
-      console.log('批量删除完成:', { successful, failed });
-      return { successful, failed };
-    } catch (error) {
-      console.error('批量删除过程中发生错误:', error);
-      throw new Error('批量删除失败: ' + (error.message || '未知错误'));
-    }
-  },
-
-  // 更新图片的点赞数（管理员专用）
-  async adminUpdateVotes(imageId, likesCount, dislikesCount) {
-    try {
-      const { data, error } = await supabase
-        .rpc('admin_update_vote_count', {
-          p_image_id: imageId,
-          p_likes_count: likesCount,
-          p_dislikes_count: dislikesCount
-        });
-
-      if (error) throw error;
-      return true;
-    } catch (error) {
-      console.error('更新点赞数失败:', error);
-      throw new Error('更新点赞数失败: ' + error.message);
-    }
-  },
-
-  // 检查用户24小时内的点赞次数
-  async checkUserReactionLimit(userId) {
-    if (userId === 'admin') return true;
-    
-    try {
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { count, error } = await supabase
-        .from('image_votes')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .gte('created_at', twentyFourHoursAgo);
-
-      if (error) throw error;
-      return count < 50;
-    } catch (error) {
-      console.error('检查点赞限制失败:', error);
-      throw new Error('检查点赞限制失败: ' + error.message);
-    }
-  },
-
-  // 更新图片的点赞状态
-  async updateImageLikes(imageId, userId, isLike) {
-    try {
-      // 检查用户点赞限制
-      if (userId !== 'admin') {
-        const canReact = await this.checkUserReactionLimit(userId);
-        if (!canReact) {
-          throw new Error('您在24小时内的点赞次数已达到上限(50次)');
-        }
-      }
-
-      // 检查是否已经对这张图片进行过操作
-      const { data: existingVote } = await supabase
-        .from('image_votes')
-        .select('*')
-        .eq('image_id', imageId)
-        .eq('user_id', userId)
-        .single();
-
-      if (existingVote) {
-        // 如果已经有投票记录
-        if (existingVote.is_like === isLike) {
-          // 如果点击的是相同的按钮，则取消投票
-          await supabase
-            .from('image_votes')
-            .delete()
-            .eq('image_id', imageId)
-            .eq('user_id', userId);
-
-          // 更新图片的赞/踩计数
-          await supabase.rpc(isLike ? 'decrement_likes' : 'decrement_dislikes', {
-            image_id: imageId
-          });
-
-          return { action: 'removed' };
-        } else {
-          // 如果点击的是不同的按钮，则更新投票
-          await supabase
-            .from('image_votes')
-            .update({ is_like: isLike })
-            .eq('image_id', imageId)
-            .eq('user_id', userId);
-
-          // 更新图片的赞/踩计数
-          if (isLike) {
-            await supabase.rpc('increment_likes', { image_id: imageId });
-            await supabase.rpc('decrement_dislikes', { image_id: imageId });
-          } else {
-            await supabase.rpc('increment_dislikes', { image_id: imageId });
-            await supabase.rpc('decrement_likes', { image_id: imageId });
-          }
-
-          return { action: 'changed' };
-        }
-      } else {
-        // 如果没有投票记录，则创建新的投票
-        await supabase
-          .from('image_votes')
-          .insert([
-            {
-              image_id: imageId,
-              user_id: userId,
-              is_like: isLike,
-              created_at: new Date().toISOString()
-            }
-          ]);
-
-        // 更新图片的赞/踩计数
-        await supabase.rpc(isLike ? 'increment_likes' : 'increment_dislikes', {
-          image_id: imageId
-        });
-
-        return { action: 'added' };
-      }
-    } catch (error) {
-      console.error('更新点赞状态失败:', error);
-      throw error;
-    }
-  },
-
-  // 获取用户对图片的投票状态
-  async getImageVoteStatus(imageId, userId) {
-    try {
-      const { data: vote } = await supabase
-        .from('image_votes')
-        .select('is_like')
-        .eq('image_id', imageId)
-        .eq('user_id', userId)
-        .single();
-
-      return vote ? vote.is_like : null;
-    } catch (error) {
-      console.error('获取投票状态失败:', error);
-      return null;
-    }
-  },
-
-  // 置顶图片
-  async pinImage(imageId) {
-    try {
-      const { data: currentImage, error: getError } = await supabase
-        .from('report_images')
-        .select('is_pinned')
-        .eq('id', imageId)
-        .single();
-
-      if (getError) throw getError;
-
-      const { error: updateError } = await supabase
-        .from('report_images')
-        .update({ is_pinned: !currentImage.is_pinned })
-        .eq('id', imageId);
-
-      if (updateError) throw updateError;
-
-      return { success: true, is_pinned: !currentImage.is_pinned };
-    } catch (error) {
-      console.error('置顶图片失败:', error);
-      throw error;
-    }
-  },
-}
-
 // 消息相关的数据库操作
 export const messagesApi = {
   // 获取所有消息
@@ -1146,72 +595,349 @@ export const messagesApi = {
     }
   },
 
-  // 管理员更新反应数量
-  async updateReactionCount(messageId, reactionType, count) {
-    console.log(`正在更新消息 ${messageId} 的${reactionType === 'likes' ? '点赞' : '点踩'}数量为 ${count}`);
+  // 更新消息的赞踩数量（仅限管理员）
+  async updateMessageReactions(messageId, likes, dislikes) {
+    console.log('正在更新消息反应数量:', { messageId, likes, dislikes });
     try {
-      if (!messageId) {
-        throw new Error('消息ID不能为空');
-      }
-
-      if (count < 0) {
-        throw new Error('反应数量不能为负数');
-      }
-
-      // 检查消息是否存在
-      const { data: message, error: messageError } = await supabase
-        .from('messages')
-        .select('id')
-        .eq('id', messageId)
-        .single();
-
-      if (messageError) {
-        console.error('获取消息失败:', messageError);
-        throw new Error('获取消息失败');
-      }
-
-      if (!message) {
-        throw new Error('消息不存在');
-      }
-
-      // 首先删除该消息的所有该类型反应
+      // 首先删除该消息的所有现有反应
       const { error: deleteError } = await supabase
         .from('message_reactions')
         .delete()
-        .eq('message_id', messageId)
-        .eq('is_like', reactionType === 'likes');
+        .eq('message_id', messageId);
 
       if (deleteError) {
         console.error('删除现有反应失败:', deleteError);
-        throw new Error('更新反应数量失败');
+        throw new Error('更新反应失败：无法删除现有反应');
       }
 
-      // 如果新的数量大于0，则添加对应数量的反应
-      if (count > 0) {
-        // 创建要插入的反应数组
-        const reactionsToInsert = Array.from({ length: count }, (_, i) => ({
-          message_id: messageId,
-          user_id: `admin_reaction_${i}`, // 使用特殊的用户ID表示这是管理员创建的
-          is_like: reactionType === 'likes',
-          created_at: new Date().toISOString()
-        }));
-
-        // 批量插入新的反应
-        const { error: insertError } = await supabase
+      // 添加新的点赞
+      const likesPromises = Array(likes).fill().map(() => 
+        supabase
           .from('message_reactions')
-          .insert(reactionsToInsert);
+          .insert({
+            message_id: messageId,
+            user_id: 'admin',
+            is_like: true
+          })
+      );
 
-        if (insertError) {
-          console.error('添加新反应失败:', insertError);
-          throw new Error('更新反应数量失败');
-        }
+      // 添加新的点踩
+      const dislikesPromises = Array(dislikes).fill().map(() => 
+        supabase
+          .from('message_reactions')
+          .insert({
+            message_id: messageId,
+            user_id: 'admin',
+            is_like: false
+          })
+      );
+
+      // 等待所有操作完成
+      const results = await Promise.all([...likesPromises, ...dislikesPromises]);
+      
+      // 检查是否有任何错误
+      const errors = results.filter(result => result.error);
+      if (errors.length > 0) {
+        console.error('添加新反应时发生错误:', errors);
+        throw new Error('更新反应失败：无法添加新的反应');
       }
 
-      console.log(`成功更新${reactionType === 'likes' ? '点赞' : '点踩'}数量为 ${count}`);
+      console.log('成功更新消息反应数量');
       return true;
     } catch (error) {
-      console.error(`更新${reactionType === 'likes' ? '点赞' : '点踩'}数量失败:`, error);
-      throw new Error(`更新${reactionType === 'likes' ? '点赞' : '点踩'}数量失败: ${error.message || '未知错误'}`);
+      console.error('更新消息反应数量失败:', error);
+      throw new Error('更新反应失败: ' + (error.message || '未知错误'));
     }
   }
 }
+
+// 测试记录相关的数据库操作
+export const testRecordsApi = {
+  // 检查表是否存在
+  async checkTablesExist() {
+    try {
+      // 尝试查询每个表来检查是否存在
+      const { error: usersError } = await supabase
+        .from('users')
+        .select('id')
+        .limit(1);
+
+      const { error: recordsError } = await supabase
+        .from('test_records')
+        .select('id')
+        .limit(1);
+
+      const { error: resultsError } = await supabase
+        .from('test_results')
+        .select('id')
+        .limit(1);
+
+      return {
+        users: !usersError,
+        test_records: !recordsError,
+        test_results: !resultsError,
+        allExist: !usersError && !recordsError && !resultsError
+      };
+    } catch (error) {
+      console.error('检查表存在性失败:', error);
+      return {
+        users: false,
+        test_records: false,
+        test_results: false,
+        allExist: false
+      };
+    }
+  },
+
+  // 保存测试记录
+  async saveTestRecord({ userId, nickname, testType, ratings, reportData }) {
+    console.log('正在保存测试记录:', { userId, nickname, testType });
+    try {
+      // 首先检查表是否存在
+      const tablesStatus = await this.checkTablesExist();
+      if (!tablesStatus.allExist) {
+        throw new Error(`数据库表不存在。缺少的表: ${Object.entries(tablesStatus).filter(([key, exists]) => key !== 'allExist' && !exists).map(([key]) => key).join(', ')}`);
+      }
+
+      // 首先保存或更新用户信息
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .upsert([{
+          id: userId,
+          nickname: nickname || '匿名用户',
+          last_active: new Date().toISOString()
+        }], {
+          onConflict: 'id'
+        })
+        .select();
+
+      if (userError) {
+        console.error('保存用户信息失败:', userError);
+        throw userError;
+      }
+
+      // 准备测试记录数据，适配现有表结构
+      const recordInsertData = {
+        user_id_text: userId, // 使用新添加的 user_id_text 列
+        test_type: testType,
+        report_data: reportData, // 现在应该存在这个列
+        created_at: new Date().toISOString()
+      };
+
+      // 保存测试记录
+      const { data: recordData, error: recordError } = await supabase
+        .from('test_records')
+        .insert([recordInsertData])
+        .select();
+
+      if (recordError) {
+        console.error('保存测试记录失败:', recordError);
+        throw recordError;
+      }
+
+      const recordId = recordData[0].id;
+
+      // 保存详细的测试结果
+      const resultEntries = Object.entries(ratings).map(([key, rating]) => {
+        const [category, item] = key.split('-');
+        return {
+          record_id: recordId,
+          category,
+          item,
+          rating,
+          created_at: new Date().toISOString()
+        };
+      });
+
+      if (resultEntries.length > 0) {
+        const { error: resultsError } = await supabase
+          .from('test_results')
+          .insert(resultEntries);
+
+        if (resultsError) {
+          console.error('保存测试结果失败:', resultsError);
+          throw resultsError;
+        }
+      }
+
+      console.log('测试记录保存成功:', recordId);
+      return recordData[0];
+    } catch (error) {
+      console.error('保存测试记录时发生错误:', error);
+      throw new Error('保存测试记录失败: ' + (error.message || '未知错误'));
+    }
+  },
+
+  // 获取用户的测试记录列表
+  async getUserTestRecords(userId) {
+    console.log('正在获取用户测试记录:', userId);
+    try {
+      const { data, error } = await supabase
+        .from('test_records')
+        .select(`
+          id,
+          test_type,
+          report_data,
+          created_at,
+          updated_at
+        `)
+        .eq('user_id_text', userId) // 使用 user_id_text 列
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('获取测试记录失败:', error);
+        throw error;
+      }
+
+      console.log('成功获取测试记录:', data?.length || 0, '条');
+      return data || [];
+    } catch (error) {
+      console.error('获取测试记录时发生错误:', error);
+      throw new Error('获取测试记录失败: ' + (error.message || '未知错误'));
+    }
+  },
+
+  // 获取特定测试记录的详细结果
+  async getTestRecordDetails(recordId) {
+    console.log('正在获取测试记录详情:', recordId);
+    try {
+      // 获取记录基本信息
+      const { data: recordData, error: recordError } = await supabase
+        .from('test_records')
+        .select(`
+          id,
+          test_type,
+          report_data,
+          created_at,
+          user_id_text
+        `)
+        .eq('id', recordId)
+        .single();
+
+      if (recordError) {
+        console.error('获取记录基本信息失败:', recordError);
+        throw recordError;
+      }
+
+      // 获取详细结果
+      const { data: resultsData, error: resultsError } = await supabase
+        .from('test_results')
+        .select('category, item, rating')
+        .eq('record_id', recordId);
+
+      if (resultsError) {
+        console.error('获取详细结果失败:', resultsError);
+        throw resultsError;
+      }
+
+      // 重构ratings对象
+      const ratings = {};
+      resultsData.forEach(result => {
+        ratings[`${result.category}-${result.item}`] = result.rating;
+      });
+
+      return {
+        ...recordData,
+        ratings
+      };
+    } catch (error) {
+      console.error('获取测试记录详情时发生错误:', error);
+      throw new Error('获取测试记录详情失败: ' + (error.message || '未知错误'));
+    }
+  },
+
+  // 删除测试记录
+  async deleteTestRecord(recordId, userId) {
+    console.log('正在删除测试记录:', { recordId, userId });
+    try {
+      // 首先验证记录是否属于该用户
+      const { data: recordData, error: fetchError } = await supabase
+        .from('test_records')
+        .select('user_id_text')
+        .eq('id', recordId)
+        .single();
+
+      if (fetchError) {
+        console.error('查找记录失败:', fetchError);
+        throw new Error('查找记录时出错');
+      }
+
+      if (recordData.user_id_text !== userId) {
+        throw new Error('您没有权限删除此记录');
+      }
+
+      // 删除记录（级联删除会自动删除相关的test_results）
+      const { error: deleteError } = await supabase
+        .from('test_records')
+        .delete()
+        .eq('id', recordId);
+
+      if (deleteError) {
+        console.error('删除记录失败:', deleteError);
+        throw deleteError;
+      }
+
+      console.log('测试记录删除成功:', recordId);
+      return true;
+    } catch (error) {
+      console.error('删除测试记录时发生错误:', error);
+      throw new Error('删除测试记录失败: ' + (error.message || '未知错误'));
+    }
+  },
+
+  // 获取用户最新的测试记录
+  async getLatestTestRecord(userId, testType) {
+    console.log('正在获取最新测试记录:', { userId, testType });
+    try {
+      const { data, error } = await supabase
+        .from('test_records')
+        .select(`
+          id,
+          test_type,
+          report_data,
+          created_at
+        `)
+        .eq('user_id_text', userId) // 使用 user_id_text 列
+        .eq('test_type', testType)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('获取最新记录失败:', error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        return null;
+      }
+
+      // 获取详细结果
+      const recordId = data[0].id;
+      const { data: resultsData, error: resultsError } = await supabase
+        .from('test_results')
+        .select('category, item, rating')
+        .eq('record_id', recordId);
+
+      if (resultsError) {
+        console.error('获取详细结果失败:', resultsError);
+        return data[0]; // 返回基本信息，不包含详细结果
+      }
+
+      // 重构ratings对象
+      const ratings = {};
+      resultsData.forEach(result => {
+        ratings[`${result.category}-${result.item}`] = result.rating;
+      });
+
+      return {
+        ...data[0],
+        ratings
+      };
+    } catch (error) {
+      console.error('获取最新测试记录时发生错误:', error);
+      return null; // 不抛出错误，返回null表示没有记录
+    }
+  }
+};
+
+export default messagesApi;
