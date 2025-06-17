@@ -98,8 +98,10 @@ const Footer = ({ pixelStyle = false, pinkStyle = false, redStyle = false }) => 
               justifyContent: 'center'
             }}
           >
-            <Link 
-              href="#" 
+            <Link
+              href="https://t.me/+ZEKnJ11Xu8U1ZTll"
+              target="_blank"
+              rel="noopener noreferrer"
               color="inherit"
               underline="hover"
               sx={{
