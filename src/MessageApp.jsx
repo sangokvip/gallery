@@ -18,6 +18,7 @@ import CollectionsIcon from '@mui/icons-material/Collections'
 import FemaleIcon from '@mui/icons-material/Female'
 import MaleIcon from '@mui/icons-material/Male'
 import ScienceIcon from '@mui/icons-material/Science'
+import TelegramIcon from '@mui/icons-material/Telegram'
 import './styles/pixel-theme.css'
 import { messagesApi } from './utils/supabase'
 import { v4 as uuidv4 } from 'uuid'; // 导入 uuid
@@ -1453,11 +1454,11 @@ function MessageApp() {
               minHeight: 'calc(100vh - 200px)', // 减去顶部导航栏和底部输入框的高度
             }}
           >
-            <Typography 
-              variant="h3" 
-              className="pixel-title-pink" 
-              sx={{ 
-                mb: 4,
+            <Typography
+              variant="h3"
+              className="pixel-title-pink"
+              sx={{
+                mb: 3,
                 cursor: 'default',
                 userSelect: 'none'
               }}
@@ -1466,7 +1467,89 @@ function MessageApp() {
               I Love Dirty Talk
             </Typography>
 
-            <Box sx={{ 
+            {/* Telegram群组提示 */}
+            <Paper
+              onClick={() => window.open('https://t.me/+ZEKnJ11Xu8U1ZTll', '_blank')}
+              sx={{
+                p: 2,
+                mb: 4,
+                backgroundColor: 'rgba(0, 136, 204, 0.1)',
+                border: '3px solid #0088cc',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                maxWidth: '600px',
+                mx: 'auto',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 8px 25px rgba(0, 136, 204, 0.3)',
+                  backgroundColor: 'rgba(0, 136, 204, 0.15)',
+                  borderColor: '#0077b3'
+                },
+                '&:active': {
+                  transform: 'translateY(0)',
+                  transition: 'transform 0.1s'
+                }
+              }}
+            >
+              <TelegramIcon
+                sx={{
+                  color: '#0088cc',
+                  fontSize: { xs: 28, md: 32 },
+                  flexShrink: 0
+                }}
+              />
+              <Box sx={{ flex: 1 }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: '#0088cc',
+                    fontWeight: 'bold',
+                    fontSize: { xs: '1rem', md: '1.25rem' },
+                    mb: 0.5
+                  }}
+                >
+                  加入Telegram交流群
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#0077b3',
+                    fontSize: { xs: '0.875rem', md: '1rem' }
+                  }}
+                >
+                  寻找同好，分享心得，深度交流
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  backgroundColor: '#0088cc',
+                  animation: 'pulse 2s infinite',
+                  '@keyframes pulse': {
+                    '0%': {
+                      transform: 'scale(1)',
+                      opacity: 1
+                    },
+                    '50%': {
+                      transform: 'scale(1.2)',
+                      opacity: 0.7
+                    },
+                    '100%': {
+                      transform: 'scale(1)',
+                      opacity: 1
+                    }
+                  }
+                }}
+              />
+            </Paper>
+
+            <Box sx={{
               display: 'flex',
               flexDirection: 'column',
               gap: 3,
