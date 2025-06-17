@@ -16,6 +16,7 @@ import FemaleIcon from '@mui/icons-material/Female'
 import SaveIcon from '@mui/icons-material/Save'
 import HistoryIcon from '@mui/icons-material/History'
 import PersonIcon from '@mui/icons-material/Person'
+import TelegramIcon from '@mui/icons-material/Telegram'
 import Footer from './components/Footer'
 import MessageIcon from '@mui/icons-material/Message'
 import { testRecordsApi } from './utils/supabase'
@@ -1079,6 +1080,82 @@ function SApp() {
           </Paper>
         </Box>
       </Container>
+
+      {/* Telegram浮动按钮 */}
+      <Box
+        onClick={() => window.open('https://t.me/+ZEKnJ11Xu8U1ZTll', '_blank')}
+        title="点击加入M Lab交流群，寻找同好"
+        sx={{
+          position: 'fixed',
+          bottom: { xs: 20, md: 30 },
+          right: { xs: 20, md: 30 },
+          width: { xs: 56, md: 64 },
+          height: { xs: 56, md: 64 },
+          backgroundColor: '#0088cc',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          boxShadow: '0 4px 20px rgba(0, 136, 204, 0.3)',
+          zIndex: 1000,
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            transform: 'scale(1.05)',
+            boxShadow: '0 6px 25px rgba(0, 136, 204, 0.5)',
+            backgroundColor: '#0077b3'
+          },
+          '&:active': {
+            transform: 'scale(0.95)',
+            transition: 'transform 0.1s'
+          },
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            borderRadius: '50%',
+            background: 'linear-gradient(45deg, rgba(255,255,255,0.2), transparent)',
+            pointerEvents: 'none'
+          }
+        }}
+      >
+        <TelegramIcon
+          sx={{
+            color: 'white',
+            fontSize: { xs: 28, md: 32 },
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
+          }}
+        />
+
+        {/* 脉冲动画环 */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: -4,
+            left: -4,
+            right: -4,
+            bottom: -4,
+            borderRadius: '50%',
+            border: '2px solid #0088cc',
+            opacity: 0,
+            animation: 'pulse 2s infinite',
+            '@keyframes pulse': {
+              '0%': {
+                transform: 'scale(1)',
+                opacity: 1
+              },
+              '100%': {
+                transform: 'scale(1.3)',
+                opacity: 0
+              }
+            }
+          }}
+        />
+      </Box>
+
       <Footer pixelStyle={true} redStyle={true} />
       </Box>
 
